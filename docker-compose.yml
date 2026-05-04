@@ -1,5 +1,6 @@
-# === PMKA - Docker Compose ===
-# Khởi chạy hệ thống: PostgreSQL + Redis + Backend (FastAPI) + Celery Worker
+# === PMKA - Docker Compose (v0.3) ===
+# Khởi chạy hệ thống: PostgreSQL + Backend (FastAPI)
+# Celery + Redis đã loại bỏ từ v0.3 — pipeline chạy server-side trong FastAPI.
 
 services:
   # ── PostgreSQL ─────────────────────────────────────────
@@ -20,18 +21,6 @@ services:
       timeout: 3s
       retries: 5
 
-  # ── Redis (Message Broker cho Celery) ──────────────────
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
   # ── Backend (FastAPI + FFmpeg + yt-dlp) ────────────────
   backend:
     build:
@@ -46,37 +35,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
       STORAGE_DIR: /app/storage
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  # ── Celery Worker (Xử lý task nén audio ngầm) ─────────
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    command: celery -A app.worker worker --loglevel=info
-    restart: unless-stopped
-    volumes:
-      # QUAN TRỌNG: phải mount giống hệt backend để cùng đọc/ghi storage
-      - ./backend:/app
-      - ./backend/app/storage:/app/storage
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/0
-      STORAGE_DIR: /app/storage
-    depends_on:
-      redis:
-        condition: service_healthy
       postgres:
         condition: service_healthy
 

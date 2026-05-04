@@ -1,6 +1,6 @@
 """
 PMKA Backend - Điểm khởi chạy FastAPI.
-Đăng ký API routers + mount static + khởi tạo DB.
+Đăng ký API routers + mount static.
 """
 import os
 from contextlib import asynccontextmanager
@@ -18,8 +18,9 @@ STORAGE_DIR = os.getenv("STORAGE_DIR", "/app/storage")
 async def lifespan(app: FastAPI):
     """
     Lifecycle hook: chạy khi server khởi động.
+    v0.3 — Pipeline server-side, Supabase làm DB chính.
     """
-    print("[STARTUP] V0.3 - Using Supabase Direct, skipping local DB init.")
+    print("[STARTUP] v0.3.0 — Server-side Pipeline, Supabase Direct.")
     yield
     print("[SHUTDOWN] Server tắt.")
 
@@ -27,7 +28,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="PMKA API",
     description="Personal Media & Knowledge Archiver",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -51,4 +52,4 @@ app.include_router(ingest.router, prefix="/api/v1")
 @app.get("/health")
 async def health_check():
     """Endpoint kiểm tra trạng thái server."""
-    return {"status": "ok", "service": "pmka-backend", "version": "0.2.0"}
+    return {"status": "ok", "service": "pmka-backend", "version": "0.3.0"}

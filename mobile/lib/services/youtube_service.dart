@@ -28,17 +28,19 @@ class VideoMetadata {
 }
 
 class YouTubeService {
-  final dio = Dio(BaseOptions(
-    baseUrl: dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000',
+  /// HTTP client — dùng EnvConfig để lấy base URL thống nhất với toàn app.
+  /// receiveTimeout dài vì pipeline nén video server-side có thể mất vài phút.
+  final Dio _dio = Dio(BaseOptions(
+    baseUrl: EnvConfig.apiBaseUrl,
     connectTimeout: const Duration(minutes: 1),
-    receiveTimeout: const Duration(minutes: 10), // Phải dài để đợi nén video
+    receiveTimeout: const Duration(minutes: 10),
   ));
 
   /// 1) Lấy metadata video từ Server API
   Future<VideoMetadata> fetchMetadata(String url) async {
     try {
       final response = await _dio.get(
-        '${EnvConfig.apiBaseUrl}/api/v1/ingest/metadata',
+        '/api/v1/ingest/metadata',
         queryParameters: {'url': url},
       );
 
@@ -65,7 +67,7 @@ class YouTubeService {
   Future<void> processOnServer(String url, String userId) async {
     try {
       final response = await _dio.post(
-        '${EnvConfig.apiBaseUrl}/api/v1/ingest/youtube-v2',
+        '/api/v1/ingest/youtube-v2',
         data: {
           'youtube_url': url,
           'user_id': userId,
