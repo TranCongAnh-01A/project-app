@@ -1,0 +1,2 @@
+# Thư mục lưu trữ file audio đã nén trên Server
+# Được mount bằng Docker volume để persist data

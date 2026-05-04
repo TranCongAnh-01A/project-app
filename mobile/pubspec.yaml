@@ -1,0 +1,45 @@
+name: pmka_mobile
+description: "PMKA - Personal Media & Knowledge Archiver"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # HTTP Client (dùng cho Telegram Bot API)
+  dio: ^5.8.0
+  # Audio Player + Windows support
+  just_audio: ^0.9.43
+  just_audio_windows: ^0.2.2
+  # Marquee text chạy lướt ngang cho tên dài
+  marquee: ^2.3.0
+  # Local Storage (thư mục tạm cho pipeline nén)
+  path_provider: ^2.1.5
+  # Cache ảnh thumbnail
+  cached_network_image: ^3.4.1
+  # UI
+  cupertino_icons: ^1.0.8
+
+  # ── Pivot Architecture: Supabase + State Management ──
+  # Backend-as-a-Service: Database + Auth + Realtime
+  supabase_flutter: ^2.8.0
+  # Quản lý biến môi trường (.env)
+  flutter_dotenv: ^5.2.1
+  # State Management: Cubit pattern
+  flutter_bloc: ^9.0.0
+  # Value equality cho Cubit states
+  equatable: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
