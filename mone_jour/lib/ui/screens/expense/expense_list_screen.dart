@@ -75,15 +75,21 @@ class ExpenseListScreen extends StatelessWidget {
 
 
 
-        // ── Summary Card ──
+        // ── Chọn tháng & Summary Card ──
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: SummaryCard(
-              totalExpense: state.totalExpense,
-              totalIncome: state.totalIncome,
-              balance: state.balance,
-            ),
+          child: Column(
+            children: [
+              _buildMonthSelector(context, state.selectedMonth),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: SummaryCard(
+                  totalExpense: state.totalExpense,
+                  totalIncome: state.totalIncome,
+                  balance: state.balance,
+                ),
+              ),
+            ],
           ),
         ),
 
@@ -122,7 +128,7 @@ class ExpenseListScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: GroupedTransactionList(
               expenses: state.expenses,
-              onTap: (expense) => _openEditScreen(context, expense),
+              onTap: (expense) => _confirmDelete(context, expense),
               onLongPress: (expense) => _confirmDelete(context, expense),
             ),
           ),
@@ -147,14 +153,30 @@ class ExpenseListScreen extends StatelessWidget {
     );
   }
 
-  /// Mở màn hình sửa chi tiêu.
-  void _openEditScreen(BuildContext context, Expense expense) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<ExpenseCubit>(),
-          child: AddExpenseScreen(editExpense: expense),
-        ),
+  Widget _buildMonthSelector(BuildContext context, DateTime selectedMonth) {
+    final theme = Theme.of(context);
+    final monthStr = 'Tháng ${selectedMonth.month}, ${selectedMonth.year}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () => context.read<ExpenseCubit>().previousMonth(),
+          ),
+          Text(
+            monthStr,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: () => context.read<ExpenseCubit>().nextMonth(),
+          ),
+        ],
       ),
     );
   }

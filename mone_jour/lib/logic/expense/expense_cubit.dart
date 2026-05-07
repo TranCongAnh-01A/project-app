@@ -40,10 +40,18 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       final totalExpense = await _repository.getTotalExpense(start, end);
       final totalIncome = await _repository.getTotalIncome(start, end);
 
+      // Tính số dư lũy kế từ trước đến nay (không bao gồm tháng hiện tại)
+      final pastStart = DateTime(2000); // Mốc thời gian ban đầu giả định
+      final pastEnd = start.subtract(const Duration(milliseconds: 1));
+      final pastIncome = await _repository.getTotalIncome(pastStart, pastEnd);
+      final pastExpense = await _repository.getTotalExpense(pastStart, pastEnd);
+      final carriedOverBalance = pastIncome - pastExpense;
+
       emit(ExpenseLoaded(
         expenses: expenses,
         totalExpense: totalExpense,
         totalIncome: totalIncome,
+        carriedOverBalance: carriedOverBalance,
         selectedMonth: _selectedMonth,
       ));
     } catch (e) {

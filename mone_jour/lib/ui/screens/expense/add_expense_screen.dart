@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/utils/currency_input_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../data/models/expense.dart';
 import '../../../logic/expense/expense_cubit.dart';
 import '../../widgets/category_picker.dart';
 
@@ -17,10 +17,9 @@ import '../../widgets/category_picker.dart';
 ///   5. Ghi chú (tùy chọn)
 ///   6. Lưu → pop về danh sách
 class AddExpenseScreen extends StatefulWidget {
-  /// Nếu không null → chế độ sửa (edit mode).
-  final Expense? editExpense;
+  const AddExpenseScreen({super.key});
 
-  const AddExpenseScreen({super.key, this.editExpense});
+
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -35,22 +34,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late DateTime _selectedDate;
   bool _isSaving = false;
 
-  bool get _isEditMode => widget.editExpense != null;
-
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now();
-
-    // Nếu edit mode → điền dữ liệu cũ vào form
-    if (_isEditMode) {
-      final e = widget.editExpense!;
-      _amountController.text = e.amount.toStringAsFixed(0);
-      _noteController.text = e.note ?? '';
-      _selectedCategory = e.category;
-      _isIncome = e.isIncome;
-      _selectedDate = e.date;
-    }
   }
 
   @override
@@ -66,7 +53,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditMode ? 'Sửa giao dịch' : 'Thêm giao dịch'),
+        title: const Text('Thêm giao dịch'),
         actions: [
           // Nút lưu
           Padding(
@@ -140,7 +127,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                CurrencyInputFormatter(),
+              ],
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: _isIncome
@@ -158,7 +148,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ),
                 filled: true,
               ),
-              autofocus: !_isEditMode,
+              autofocus: true,
             ),
 
             const SizedBox(height: 24),
@@ -266,7 +256,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       return;
     }
 
-    final amount = double.tryParse(amountText);
+    // Clean text before parsing (remove commas)
+    final cleanAmountText = amountText.replaceAll(RegExp(r'[^\d]'), '');
+    final amount = double.tryParse(cleanAmountText);
     if (amount == null || amount <= 0) {
       _showError('Số tiền phải lớn hơn 0');
       return;
@@ -278,30 +270,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     setState(() => _isSaving = true);
 
     try {
-      if (_isEditMode) {
-        // Edit mode: cập nhật expense hiện có
-        final updated = widget.editExpense!
-          ..amount = amount
-          ..category = _selectedCategory
-          ..date = _selectedDate
-          ..isIncome = _isIncome
-          ..note = _noteController.text.trim().isEmpty
-              ? null
-              : _noteController.text.trim();
-
-        await expenseCubit.updateExpense(updated);
-      } else {
-        // Add mode: tạo mới
-        await expenseCubit.addExpense(
-          amount: amount,
-          category: _selectedCategory,
-          date: _selectedDate,
-          isIncome: _isIncome,
-          note: _noteController.text.trim().isEmpty
-              ? null
-              : _noteController.text.trim(),
-        );
-      }
+      // Add mode: tạo mới
+      await expenseCubit.addExpense(
+        amount: amount,
+        category: _selectedCategory,
+        isIncome: _isIncome,
+        date: _selectedDate,
+        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      );
 
       if (mounted) Navigator.pop(context);
     } catch (e) {

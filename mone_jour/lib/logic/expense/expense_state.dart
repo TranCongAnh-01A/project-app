@@ -25,23 +25,26 @@ class ExpenseLoaded extends ExpenseState {
   final List<Expense> expenses;
   final double totalExpense;
   final double totalIncome;
+  final double carriedOverBalance;
   final DateTime selectedMonth;
 
   const ExpenseLoaded({
     required this.expenses,
     required this.totalExpense,
     required this.totalIncome,
+    required this.carriedOverBalance,
     required this.selectedMonth,
   });
 
-  /// Balance = Thu nhập - Chi tiêu
-  double get balance => totalIncome - totalExpense;
+  /// Balance = Dư đầu kỳ + Thu nhập trong kỳ - Chi tiêu trong kỳ
+  double get balance => carriedOverBalance + totalIncome - totalExpense;
 
   @override
   List<Object?> get props => [
         expenses,
         totalExpense,
         totalIncome,
+        carriedOverBalance,
         selectedMonth,
       ];
 }

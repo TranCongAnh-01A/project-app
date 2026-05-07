@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
+import '../../../data/models/expense.dart';
 import '../../../data/models/fixed_expense.dart';
 import '../../../logic/budget/budget_cubit.dart';
 import '../../../logic/budget/budget_state.dart';
@@ -121,6 +122,8 @@ class HomeScreen extends StatelessWidget {
                   return GroupedTransactionList(
                     expenses: state.expenses,
                     maxItems: 10,
+                    onTap: (expense) => _confirmDelete(context, expense),
+                    onLongPress: (expense) => _confirmDelete(context, expense),
                   );
                 }
                 return const Center(child: CircularProgressIndicator());
@@ -140,6 +143,33 @@ class HomeScreen extends StatelessWidget {
     if (hour < 12) return 'Chào buổi sáng ☀️';
     if (hour < 18) return 'Chào buổi chiều 🌤️';
     return 'Chào buổi tối 🌙';
+  }
+
+  /// Dialog xác nhận xóa chi tiêu.
+  void _confirmDelete(BuildContext context, Expense expense) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Xóa giao dịch?'),
+        content: const Text('Bạn có chắc muốn xóa khoản này? Không thể hoàn tác.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () {
+              context.read<ExpenseCubit>().deleteExpense(expense.id);
+              Navigator.pop(dialogContext);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Section cuộn ngang hiển thị danh sách template.

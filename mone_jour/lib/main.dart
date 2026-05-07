@@ -20,6 +20,11 @@ void main() async {
   // Khởi tạo database
   await DatabaseService.initialize();
 
+  FlutterError.onError = (FlutterErrorDetails details) {
+    print('FLUTTER_ERROR: ${details.exception}');
+    print('STACK_TRACE: ${details.stack}');
+  };
+
   runApp(const MoneJourApp());
 }
 
