@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/utils/date_formatter.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/models/expense.dart';
 import '../../../logic/expense/expense_cubit.dart';
 import '../../../logic/expense/expense_state.dart';
@@ -51,8 +51,7 @@ class ExpenseListScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         heroTag: 'add_expense',
         onPressed: () => _openAddScreen(context),
-        backgroundColor: const Color(0xFF10B981),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -99,20 +98,20 @@ class ExpenseListScreen extends StatelessWidget {
                   Icon(
                     Icons.receipt_long_outlined,
                     size: 64,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.outline,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'Chưa có giao dịch nào',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Nhấn + để thêm khoản chi tiêu đầu tiên',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -178,7 +177,7 @@ class ExpenseListScreen extends StatelessWidget {
               Navigator.pop(dialogContext);
             },
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppTheme.expenseRed,
             ),
             child: const Text('Xóa'),
           ),

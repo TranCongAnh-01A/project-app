@@ -1,31 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/categories.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_formatter.dart';
-import '../../core/utils/date_formatter.dart';
 import '../../core/utils/expense_grouper.dart';
 import '../../data/models/expense.dart';
 
 /// Widget hiển thị lịch sử giao dịch gộp nhóm theo ngày.
 ///
-/// Cấu trúc giống app ngân hàng:
-///   ┌─────────────────────────────────────┐
-///   │  3 THÁNG 5               -250.000 ₫ │  ← Header ngày
-///   ├─────────────────────────────────────┤
-///   │  🍔 Ăn uống   Cơm trưa   -50.000 ₫ │  ← Item giao dịch
-///   │  🚗 Di chuyển  Grab      -100.000 ₫ │
-///   │  💰 Thu nhập   Lương    +200.000 ₫  │
-///   └─────────────────────────────────────┘
+/// Cấu trúc kiểu app ngân hàng:
+///   Header ngày (nhãn + tổng dư) → Danh sách items bên dưới.
 class GroupedTransactionList extends StatelessWidget {
   final List<Expense> expenses;
-
-  /// Số giao dịch tối đa hiển thị (null = hiện tất cả).
   final int? maxItems;
-
-  /// Callback khi nhấn vào 1 giao dịch.
   final void Function(Expense)? onTap;
-
-  /// Callback khi nhấn giữ 1 giao dịch (VD: xóa).
   final void Function(Expense)? onLongPress;
 
   const GroupedTransactionList({
@@ -42,11 +30,8 @@ class GroupedTransactionList extends StatelessWidget {
       return _buildEmptyState(context);
     }
 
-    // Giới hạn số lượng nếu cần
     final displayExpenses =
         maxItems != null ? expenses.take(maxItems!).toList() : expenses;
-
-    // Gom nhóm theo ngày
     final grouped = groupExpensesByDate(displayExpenses);
 
     return ListView.builder(
@@ -71,20 +56,29 @@ class GroupedTransactionList extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.receipt_long_outlined,
-              size: 48,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                Icons.receipt_long_outlined,
+                size: 30,
+                color: AppTheme.primaryPastel,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Text(
               'Chưa có giao dịch nào',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -94,7 +88,7 @@ class GroupedTransactionList extends StatelessWidget {
   }
 }
 
-/// Nhóm giao dịch trong 1 ngày — Header + danh sách items.
+/// Nhóm giao dịch trong 1 ngày.
 class _DayGroup extends StatelessWidget {
   final DateTime date;
   final List<Expense> expenses;
@@ -113,58 +107,71 @@ class _DayGroup extends StatelessWidget {
     final theme = Theme.of(context);
     final dayBalance = calculateDayBalance(expenses);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Header ngày ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _formatDayHeader(date),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ngày ──
+          Padding(
+            padding: const EdgeInsets.only(top: 18, bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${date.day} THÁNG ${date.month}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.8,
+                    fontSize: 11,
+                  ),
                 ),
-              ),
-              Text(
-                formatVNDSigned(dayBalance),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: dayBalance >= 0
-                      ? const Color(0xFF10B981)
-                      : const Color(0xFFEF4444),
-                  fontWeight: FontWeight.w600,
+                Text(
+                  formatVNDSigned(dayBalance),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: dayBalance >= 0
+                        ? AppTheme.incomeGreen
+                        : AppTheme.expenseRed,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        // Đường kẻ phân cách mỏng
-        Divider(
-          height: 1,
-          indent: 20,
-          endIndent: 20,
-          color: theme.colorScheme.outline.withValues(alpha: 0.08),
-        ),
-
-        // ── Danh sách giao dịch trong ngày ──
-        ...expenses.map((expense) => _TransactionItem(
-              expense: expense,
-              onTap: onTap != null ? () => onTap!(expense) : null,
-              onLongPress:
-                  onLongPress != null ? () => onLongPress!(expense) : null,
-            )),
-      ],
+          // ── Card chứa items ──
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < expenses.length; i++) ...[
+                  _TransactionItem(
+                    expense: expenses[i],
+                    onTap: onTap != null ? () => onTap!(expenses[i]) : null,
+                    onLongPress: onLongPress != null
+                        ? () => onLongPress!(expenses[i])
+                        : null,
+                  ),
+                  // Divider giữa các item (không phải item cuối)
+                  if (i < expenses.length - 1)
+                    Divider(
+                      height: 1,
+                      indent: 62,
+                      endIndent: 16,
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.6),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
-  }
-
-  /// Format ngày theo kiểu "7 THÁNG 5".
-  String _formatDayHeader(DateTime date) {
-    return '${date.day} THÁNG ${date.month}';
   }
 }
 
@@ -186,22 +193,18 @@ class _TransactionItem extends StatelessWidget {
     final category = getCategoryById(expense.category);
     final isIncome = expense.isIncome;
 
-    // Màu số tiền: xanh lá cho thu nhập, dùng theme cho chi tiêu
-    final amountColor = isIncome
-        ? const Color(0xFF10B981)
-        : theme.colorScheme.onSurface.withValues(alpha: 0.8);
-
     return InkWell(
       onTap: onTap,
       onLongPress: onLongPress,
+      borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             // ── Icon danh mục ──
             Container(
-              width: 42,
-              height: 42,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: category.color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
@@ -223,7 +226,8 @@ class _TransactionItem extends StatelessWidget {
                   Text(
                     category.name,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -233,8 +237,8 @@ class _TransactionItem extends StatelessWidget {
                     Text(
                       expense.note!,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.4),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -244,14 +248,14 @@ class _TransactionItem extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
 
             // ── Số tiền ──
             Text(
               '${isIncome ? '+' : '-'}${formatVND(expense.amount)}',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: amountColor,
-                fontWeight: FontWeight.w600,
+                color: isIncome ? AppTheme.incomeGreen : Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

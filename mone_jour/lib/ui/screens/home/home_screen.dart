@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../data/models/fixed_expense.dart';
 import '../../../logic/budget/budget_cubit.dart';
@@ -58,7 +59,7 @@ class HomeScreen extends StatelessWidget {
                 _getGreeting(),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w300,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -108,7 +109,8 @@ class HomeScreen extends StatelessWidget {
               child: Text(
                 'Giao dịch gần đây',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -158,13 +160,14 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'Chi tiêu cố định',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               Text(
                 '${templates.length} mục',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -200,22 +203,29 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: InkWell(
         onTap: () => _showTemplateSheet(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.15),
-            ),
-            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
+            borderRadius: BorderRadius.circular(20),
+            color: Theme.of(context).colorScheme.surface,
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.bookmark_add_outlined,
-                color: theme.colorScheme.primary.withValues(alpha: 0.5),
-                size: 32,
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.bookmark_add_outlined,
+                  color: AppTheme.primaryPastel,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -226,23 +236,20 @@ class HomeScreen extends StatelessWidget {
                       'Tạo chi tiêu cố định',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Tiền trọ, điện nước, Netflix... thanh toán 1 chạm',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.4),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-              ),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
             ],
           ),
         ),
@@ -256,17 +263,14 @@ class HomeScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: InkWell(
         onTap: () => _showSetBudgetDialog(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: 0.15),
-            ),
-            borderRadius: BorderRadius.circular(16),
-            color: theme.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.3),
+            border: Border.all(color: Theme.of(context).colorScheme.outline),
+            borderRadius: BorderRadius.circular(20),
+            color: Theme.of(context).colorScheme.surface,
           ),
           child: Row(
             children: [
@@ -274,12 +278,12 @@ class HomeScreen extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.account_balance_wallet_outlined,
-                  color: Color(0xFFF59E0B),
+                  color: AppTheme.primaryPastel,
                   size: 22,
                 ),
               ),
@@ -292,23 +296,20 @@ class HomeScreen extends StatelessWidget {
                       'Thiết lập hạn mức chi tiêu',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Kiểm soát ngân sách theo danh mục mỗi tháng',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.4),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-              ),
+              Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
             ],
           ),
         ),
@@ -334,7 +335,8 @@ class HomeScreen extends StatelessWidget {
               Text(
                 'Hạn mức chi tiêu',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               TextButton.icon(
@@ -535,7 +537,7 @@ class HomeScreen extends StatelessWidget {
                                 Navigator.pop(sheetContext);
                               },
                               style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF10B981),
+                                backgroundColor: AppTheme.primaryPastel,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -596,13 +598,13 @@ class HomeScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  backgroundColor: const Color(0xFF10B981),
+                  backgroundColor: AppTheme.incomeGreen,
                   duration: const Duration(seconds: 2),
                 ),
               );
             },
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppTheme.expenseRed,
             ),
             child: const Text('Đồng ý'),
           ),
@@ -702,7 +704,7 @@ class HomeScreen extends StatelessWidget {
               Navigator.pop(dialogContext);
             },
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppTheme.expenseRed,
             ),
             child: const Text('Xóa'),
           ),

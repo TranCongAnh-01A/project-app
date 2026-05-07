@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_formatter.dart';
 
-/// Card tổng hợp thu/chi/balance ở đầu màn hình.
+/// Card tổng hợp thu/chi/balance — gradient hồng pastel.
 ///
-/// Thiết kế gradient nền tối → tạo cảm giác premium.
-/// 3 cột: Chi tiêu | Balance | Thu nhập.
+/// Layout: Balance lớn chính giữa, bên dưới 2 cột Thu nhập / Chi tiêu.
 class SummaryCard extends StatelessWidget {
   final double totalExpense;
   final double totalIncome;
@@ -21,80 +21,70 @@ class SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E293B),
-            Color(0xFF0F172A),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         children: [
-          // ── Balance lớn ở giữa ──
+          // ── Số dư ──
           Text(
-            'Số dư',
+            'Số dư hiện tại',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Text(
             formatVND(balance),
             style: TextStyle(
-              color: balance >= 0
-                  ? const Color(0xFF34D399)
-                  : const Color(0xFFF87171),
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
+          Divider(color: Theme.of(context).colorScheme.outline, height: 1),
+          const SizedBox(height: 16),
 
           // ── Thu nhập vs Chi tiêu ──
           Row(
             children: [
-              // Thu nhập
               Expanded(
                 child: _buildSubItem(
+                  context: context,
                   icon: Icons.arrow_downward_rounded,
-                  iconColor: const Color(0xFF34D399),
                   label: 'Thu nhập',
                   amount: formatVND(totalIncome),
-                  amountColor: const Color(0xFF34D399),
+                  color: AppTheme.incomeGreen,
                 ),
               ),
-
-              // Divider dọc
               Container(
                 width: 1,
                 height: 40,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: Theme.of(context).colorScheme.outline,
               ),
-
-              // Chi tiêu
               Expanded(
                 child: _buildSubItem(
+                  context: context,
                   icon: Icons.arrow_upward_rounded,
-                  iconColor: const Color(0xFFF87171),
                   label: 'Chi tiêu',
                   amount: formatVND(totalExpense),
-                  amountColor: const Color(0xFFF87171),
+                  color: AppTheme.expenseRed,
                 ),
               ),
             ],
@@ -105,31 +95,33 @@ class SummaryCard extends StatelessWidget {
   }
 
   Widget _buildSubItem({
+    required BuildContext context,
     required IconData icon,
-    required Color iconColor,
     required String label,
     required String amount,
-    required Color amountColor,
+    required Color color,
   }) {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: iconColor, size: 14),
+              child: Icon(icon, color: color, size: 14),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -138,12 +130,13 @@ class SummaryCard extends StatelessWidget {
         Text(
           amount,
           style: TextStyle(
-            color: amountColor,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            color: color,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
     );
   }
 }
+

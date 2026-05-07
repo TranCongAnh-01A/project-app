@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/categories.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../logic/budget/budget_state.dart';
 
 /// Widget hiển thị tiến trình budget 1 danh mục.
 ///
-/// Gồm: icon danh mục + tên + progress bar + số tiền.
 /// Màu tự thay đổi: xanh (safe) → cam (warning ≥80%) → đỏ (exceeded ≥100%).
 class BudgetProgressCard extends StatelessWidget {
   final BudgetProgress progress;
@@ -23,18 +23,20 @@ class BudgetProgressCard extends StatelessWidget {
     final theme = Theme.of(context);
     final category = getCategoryById(progress.categoryId);
 
-    // Màu theo trạng thái
     final statusColor = switch (progress.status) {
-      BudgetStatus.safe => const Color(0xFF10B981),
-      BudgetStatus.warning => const Color(0xFFF59E0B),
-      BudgetStatus.exceeded => const Color(0xFFEF4444),
+      BudgetStatus.safe => AppTheme.incomeGreen,
+      BudgetStatus.warning => AppTheme.warningAmber,
+      BudgetStatus.exceeded => AppTheme.expenseRed,
     };
 
-    // Clamp ratio cho progress bar (max 1.0 để không tràn visual)
     final clampedRatio = progress.ratio.clamp(0.0, 1.0);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -50,7 +52,7 @@ class BudgetProgressCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: category.color.withValues(alpha: 0.15),
+                      color: category.color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -65,10 +67,10 @@ class BudgetProgressCard extends StatelessWidget {
                       category.name,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  // Phần trăm
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -90,15 +92,14 @@ class BudgetProgressCard extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
               // ── Progress bar ──
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
                   value: clampedRatio,
-                  backgroundColor:
-                      theme.colorScheme.outline.withValues(alpha: 0.1),
+                  backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
                   valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                   minHeight: 6,
                 ),
@@ -113,15 +114,15 @@ class BudgetProgressCard extends StatelessWidget {
                   Text(
                     'Đã chi: ${formatVND(progress.currentSpending)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 11,
                     ),
                   ),
                   Text(
                     'Hạn mức: ${formatVND(progress.amountLimit)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -134,14 +135,14 @@ class BudgetProgressCard extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Color(0xFFEF4444),
+                      color: AppTheme.expenseRed,
                       size: 14,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Vượt ${formatVND(progress.currentSpending - progress.amountLimit)}',
                       style: const TextStyle(
-                        color: Color(0xFFEF4444),
+                        color: AppTheme.expenseRed,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),

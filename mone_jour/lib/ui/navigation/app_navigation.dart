@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/expense/expense_list_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/settings/settings_screen.dart';
 
 /// Bottom Navigation chính của app.
 ///
@@ -26,11 +27,7 @@ class _AppNavigationState extends State<AppNavigation> {
       title: 'Nhật ký',
       subtitle: 'Nhật ký cảm xúc (sắp ra mắt)',
     ),
-    _PlaceholderScreen(
-      icon: Icons.settings_rounded,
-      title: 'Cài đặt',
-      subtitle: 'Tùy chỉnh app (sắp ra mắt)',
-    ),
+    SettingsScreen(),
   ];
 
   @override

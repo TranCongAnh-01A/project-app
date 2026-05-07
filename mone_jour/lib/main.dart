@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'logic/budget/budget_cubit.dart';
 import 'logic/expense/expense_cubit.dart';
 import 'logic/fixed_expense/fixed_expense_cubit.dart';
+import 'logic/theme/theme_cubit.dart';
 import 'services/database_service.dart';
 import 'ui/navigation/app_navigation.dart';
 
@@ -31,6 +32,9 @@ class MoneJourApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
+          create: (_) => ThemeCubit()..loadTheme(),
+        ),
+        BlocProvider(
           create: (_) => ExpenseCubit()..loadMonth(),
         ),
         BlocProvider(
@@ -40,13 +44,17 @@ class MoneJourApp extends StatelessWidget {
           create: (_) => BudgetCubit()..loadBudgets(),
         ),
       ],
-      child: MaterialApp(
-        title: 'MoneJour',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        themeMode: ThemeMode.system,
-        home: const AppNavigation(),
+      child: BlocBuilder<ThemeCubit, ThemeMode>(
+        builder: (context, themeMode) {
+          return MaterialApp(
+            title: 'MoneJour',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: themeMode,
+            home: const AppNavigation(),
+          );
+        },
       ),
     );
   }
