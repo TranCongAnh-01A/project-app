@@ -83,6 +83,27 @@ class ExpenseRepository {
     return result;
   }
 
+  /// Tổng chi tiêu của 1 danh mục cụ thể trong tháng/năm.
+  ///
+  /// Dùng cho Budget: so sánh spending vs limit.
+  Future<double> getCategorySpending(
+    String categoryId,
+    int month,
+    int year,
+  ) async {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 0, 23, 59, 59);
+
+    final expenses = await _db.expenses
+        .filter()
+        .dateBetween(start, end)
+        .isIncomeEqualTo(false)
+        .categoryEqualTo(categoryId)
+        .findAll();
+
+    return expenses.fold<double>(0.0, (sum, e) => sum + e.amount);
+  }
+
   /// Stream theo dõi thay đổi (trigger rebuild UI khi data thay đổi).
   Stream<void> watchChanges() {
     return _db.expenses.watchLazy();

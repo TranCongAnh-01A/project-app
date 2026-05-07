@@ -272,11 +272,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       return;
     }
 
+    // Lưu reference cubit trước async gap
+    final expenseCubit = context.read<ExpenseCubit>();
+
     setState(() => _isSaving = true);
 
     try {
-      final cubit = context.read<ExpenseCubit>();
-
       if (_isEditMode) {
         // Edit mode: cập nhật expense hiện có
         final updated = widget.editExpense!
@@ -288,10 +289,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ? null
               : _noteController.text.trim();
 
-        await cubit.updateExpense(updated);
+        await expenseCubit.updateExpense(updated);
       } else {
         // Add mode: tạo mới
-        await cubit.addExpense(
+        await expenseCubit.addExpense(
           amount: amount,
           category: _selectedCategory,
           date: _selectedDate,
@@ -309,6 +310,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       if (mounted) setState(() => _isSaving = false);
     }
   }
+
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

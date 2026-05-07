@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/utils/date_formatter.dart';
+import '../../../data/models/expense.dart';
 import '../../../logic/expense/expense_cubit.dart';
 import '../../../logic/expense/expense_state.dart';
-import '../../widgets/expense_card.dart';
+import '../../widgets/grouped_transaction_list.dart';
 import '../../widgets/summary_card.dart';
 import 'add_expense_screen.dart';
 
@@ -72,33 +73,8 @@ class ExpenseListScreen extends StatelessWidget {
           ),
         ),
 
-        // ── Month Selector ──
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: () =>
-                      context.read<ExpenseCubit>().previousMonth(),
-                  icon: const Icon(Icons.chevron_left),
-                ),
-                Text(
-                  formatMonthYear(state.selectedMonth),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () =>
-                      context.read<ExpenseCubit>().nextMonth(),
-                  icon: const Icon(Icons.chevron_right),
-                ),
-              ],
-            ),
-          ),
-        ),
+
+
 
         // ── Summary Card ──
         SliverToBoxAdapter(
@@ -112,7 +88,7 @@ class ExpenseListScreen extends StatelessWidget {
           ),
         ),
 
-        // ── Danh sách chi tiêu ──
+        // ── Danh sách chi tiêu gộp nhóm theo ngày ──
         if (state.expenses.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
@@ -144,17 +120,11 @@ class ExpenseListScreen extends StatelessWidget {
             ),
           )
         else
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final expense = state.expenses[index];
-                return ExpenseCard(
-                  expense: expense,
-                  onTap: () => _openEditScreen(context, expense),
-                  onLongPress: () => _confirmDelete(context, expense),
-                );
-              },
-              childCount: state.expenses.length,
+          SliverToBoxAdapter(
+            child: GroupedTransactionList(
+              expenses: state.expenses,
+              onTap: (expense) => _openEditScreen(context, expense),
+              onLongPress: (expense) => _confirmDelete(context, expense),
             ),
           ),
 
@@ -179,7 +149,7 @@ class ExpenseListScreen extends StatelessWidget {
   }
 
   /// Mở màn hình sửa chi tiêu.
-  void _openEditScreen(BuildContext context, dynamic expense) {
+  void _openEditScreen(BuildContext context, Expense expense) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
@@ -191,7 +161,7 @@ class ExpenseListScreen extends StatelessWidget {
   }
 
   /// Dialog xác nhận xóa chi tiêu.
-  void _confirmDelete(BuildContext context, dynamic expense) {
+  void _confirmDelete(BuildContext context, Expense expense) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../screens/expense/expense_list_screen.dart';
+import '../screens/home/home_screen.dart';
 
 /// Bottom Navigation chính của app.
 ///
@@ -18,11 +19,7 @@ class _AppNavigationState extends State<AppNavigation> {
 
   // Danh sách các tab screens
   final _screens = const [
-    _PlaceholderScreen(
-      icon: Icons.home_rounded,
-      title: 'Trang chủ',
-      subtitle: 'Dashboard tổng quan (sắp ra mắt)',
-    ),
+    HomeScreen(),
     ExpenseListScreen(),
     _PlaceholderScreen(
       icon: Icons.book_rounded,

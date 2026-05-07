@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/theme/app_theme.dart';
+import 'logic/budget/budget_cubit.dart';
 import 'logic/expense/expense_cubit.dart';
+import 'logic/fixed_expense/fixed_expense_cubit.dart';
 import 'services/database_service.dart';
 import 'ui/navigation/app_navigation.dart';
 
@@ -31,7 +33,12 @@ class MoneJourApp extends StatelessWidget {
         BlocProvider(
           create: (_) => ExpenseCubit()..loadMonth(),
         ),
-        // TODO: Thêm JournalCubit, StatsCubit, SettingsCubit
+        BlocProvider(
+          create: (_) => FixedExpenseCubit()..loadTemplates(),
+        ),
+        BlocProvider(
+          create: (_) => BudgetCubit()..loadBudgets(),
+        ),
       ],
       child: MaterialApp(
         title: 'MoneJour',

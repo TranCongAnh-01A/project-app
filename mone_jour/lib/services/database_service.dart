@@ -1,7 +1,9 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../data/models/budget.dart';
 import '../data/models/expense.dart';
+import '../data/models/fixed_expense.dart';
 import '../data/models/journal_entry.dart';
 
 /// Singleton quản lý kết nối Isar Database.
@@ -23,7 +25,7 @@ class DatabaseService {
     final dir = await getApplicationDocumentsDirectory();
 
     _isar = await Isar.open(
-      [ExpenseSchema, JournalEntrySchema],
+      [ExpenseSchema, JournalEntrySchema, FixedExpenseSchema, BudgetSchema],
       directory: dir.path,
       name: 'mone_jour',
     );
