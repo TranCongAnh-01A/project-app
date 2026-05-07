@@ -1,0 +1,41 @@
+name: mone_jour
+description: "MoneJour — Quản lý chi tiêu cá nhân + Nhật ký cảm xúc (Offline 100%)"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── Local Database (Offline-first) ──
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+
+  # ── State Management ──
+  flutter_bloc: ^9.0.0
+  equatable: ^2.0.7
+
+  # ── UI & Charts ──
+  cupertino_icons: ^1.0.8
+  fl_chart: ^0.69.0
+  intl: ^0.19.0
+
+  # ── Utilities ──
+  path_provider: ^2.1.5
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # ── Isar Code Generation ──
+  isar_generator: ^3.1.0+1
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true

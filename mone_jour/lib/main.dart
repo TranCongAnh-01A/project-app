@@ -1,0 +1,46 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'core/theme/app_theme.dart';
+import 'logic/expense/expense_cubit.dart';
+import 'services/database_service.dart';
+import 'ui/navigation/app_navigation.dart';
+
+/// Entry point — khởi tạo locale + Isar database trước khi chạy app.
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo locale tiếng Việt cho DateFormat (intl package)
+  await initializeDateFormatting('vi_VN', null);
+
+  // Khởi tạo database
+  await DatabaseService.initialize();
+
+  runApp(const MoneJourApp());
+}
+
+/// Root widget — cấu hình theme + BlocProviders + navigation.
+class MoneJourApp extends StatelessWidget {
+  const MoneJourApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => ExpenseCubit()..loadMonth(),
+        ),
+        // TODO: Thêm JournalCubit, StatsCubit, SettingsCubit
+      ],
+      child: MaterialApp(
+        title: 'MoneJour',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.system,
+        home: const AppNavigation(),
+      ),
+    );
+  }
+}

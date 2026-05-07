@@ -1,0 +1,34 @@
+import 'package:isar/isar.dart';
+
+part 'expense.g.dart';
+
+/// Bảng chi tiêu — lưu trữ mỗi giao dịch thu/chi.
+///
+/// Tại sao dùng Isar Collection thay SQLite Table:
+///   - Type-safe: compiler bắt lỗi thay vì runtime crash
+///   - Zero-boilerplate: không cần viết SQL migration
+///   - Index tự động: full-text search + composite index
+@collection
+class Expense {
+  Id id = Isar.autoIncrement;
+
+  /// Số tiền (VND). Dương = chi tiêu, âm = thu nhập.
+  late double amount;
+
+  /// Mã danh mục (ăn uống, di chuyển, mua sắm...)
+  @Index()
+  late String category;
+
+  /// Ghi chú ngắn cho giao dịch
+  String? note;
+
+  /// Ngày giao dịch (không bao gồm giờ)
+  @Index()
+  late DateTime date;
+
+  /// Đánh dấu đây là khoản thu nhập (true) hay chi tiêu (false)
+  late bool isIncome;
+
+  /// Thời điểm tạo record
+  late DateTime createdAt;
+}

@@ -1,26 +1,42 @@
-# === Dependencies ===
-node_modules/
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# === Environment ===
-.env
-.env.local
-
-# === Build ===
-dist/
+# === Flutter / Dart ===
+*.dart_tool/
+.packages
 build/
-*.egg-info/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# === Dependencies ===
+.dart_tool/
+.pub-cache/
+.pub/
+
+# === Isar Database (local data) ===
+*.isar
+*.isar.lock
+default.isar
 
 # === IDE ===
 .vscode/
 .idea/
+*.iml
 
 # === OS ===
 .DS_Store
 Thumbs.db
 
-# === Storage (do Docker volume quản lý) ===
-backend/storage/
+# === Generated files ===
+*.g.dart
+*.freezed.dart
+
+# === Android ===
+mone_jour/android/.gradle/
+mone_jour/android/local.properties
+mone_jour/android/key.properties
+*.jks
+*.keystore
+
+# === iOS ===
+mone_jour/ios/Pods/
+mone_jour/ios/.symlinks/
+mone_jour/ios/Flutter/Flutter.framework
+mone_jour/ios/Flutter/Flutter.podspec
