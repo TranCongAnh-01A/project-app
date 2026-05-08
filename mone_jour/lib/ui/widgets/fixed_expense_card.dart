@@ -12,12 +12,14 @@ class FixedExpenseCard extends StatelessWidget {
   final FixedExpense template;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final double? width;
 
   const FixedExpenseCard({
     super.key,
     required this.template,
     required this.onTap,
     this.onLongPress,
+    this.width,
   });
 
   @override
@@ -26,9 +28,9 @@ class FixedExpenseCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return SizedBox(
-      width: 170,
+      width: width ?? 170,
       child: Material(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,

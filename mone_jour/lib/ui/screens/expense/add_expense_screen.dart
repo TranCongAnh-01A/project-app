@@ -2,24 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/theme/app_theme.dart';
+
 import '../../../core/utils/currency_input_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../data/models/expense.dart';
 import '../../../logic/expense/expense_cubit.dart';
 import '../../widgets/category_picker.dart';
 
 /// Màn hình thêm/sửa khoản chi tiêu.
 ///
-/// Luồng:
-///   1. Nhập số tiền (bàn phím số, auto-format VND)
-///   2. Chọn danh mục (grid 3x3)
-///   3. Toggle Thu nhập / Chi tiêu
-///   4. Chọn ngày (DatePicker)
-///   5. Ghi chú (tùy chọn)
-///   6. Lưu → pop về danh sách
+/// Hỗ trợ 2 chế độ:
+///   - Thêm mới: editExpense = null
+///   - Chỉnh sửa: editExpense != null → điền sẵn dữ liệu cũ
 class AddExpenseScreen extends StatefulWidget {
-  const AddExpenseScreen({super.key});
+  final Expense? editExpense;
 
-
+  const AddExpenseScreen({super.key, this.editExpense});
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -34,10 +33,28 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late DateTime _selectedDate;
   bool _isSaving = false;
 
+  bool get _isEditMode => widget.editExpense != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
+
+    // Edit mode → điền dữ liệu cũ vào form
+    if (_isEditMode) {
+      final e = widget.editExpense!;
+      _amountController.text = CurrencyInputFormatter()
+          .formatEditUpdate(
+            TextEditingValue.empty,
+            TextEditingValue(text: e.amount.round().toString()),
+          )
+          .text;
+      _noteController.text = e.note ?? '';
+      _selectedCategory = e.category;
+      _isIncome = e.isIncome;
+      _selectedDate = e.date;
+    } else {
+      _selectedDate = DateTime.now();
+    }
   }
 
   @override
@@ -53,7 +70,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thêm giao dịch'),
+        title: Text(_isEditMode ? 'Sửa giao dịch' : 'Thêm giao dịch'),
         actions: [
           // Nút lưu
           Padding(
@@ -61,7 +78,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             child: FilledButton(
               onPressed: _isSaving ? null : _save,
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: AppTheme.actionGreen,
               ),
               child: _isSaving
                   ? const SizedBox(
@@ -114,8 +131,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   backgroundColor: WidgetStateProperty.resolveWith((states) {
                     if (states.contains(WidgetState.selected)) {
                       return _isIncome
-                          ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                          : const Color(0xFFEF4444).withValues(alpha: 0.15);
+                          ? AppTheme.actionGreen.withValues(alpha: 0.15)
+                          : AppTheme.dangerRed.withValues(alpha: 0.15);
                     }
                     return null;
                   }),
@@ -143,8 +160,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: _isIncome
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFFEF4444),
+                    ? AppTheme.actionGreen
+                    : AppTheme.dangerRed,
               ),
               decoration: InputDecoration(
                 hintText: '0',
@@ -280,14 +297,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     setState(() => _isSaving = true);
 
     try {
-      // Add mode: tạo mới
-      await expenseCubit.addExpense(
-        amount: amount,
-        category: _selectedCategory,
-        isIncome: _isIncome,
-        date: _selectedDate,
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-      );
+      if (_isEditMode) {
+        // Edit mode: cập nhật giao dịch hiện có
+        final updated = widget.editExpense!
+          ..amount = amount
+          ..category = _selectedCategory
+          ..isIncome = _isIncome
+          ..date = _selectedDate
+          ..note = _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim();
+        await expenseCubit.updateExpense(updated);
+      } else {
+        // Add mode: tạo mới
+        await expenseCubit.addExpense(
+          amount: amount,
+          category: _selectedCategory,
+          isIncome: _isIncome,
+          date: _selectedDate,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+        );
+      }
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -302,7 +334,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: const Color(0xFFEF4444),
+        backgroundColor: AppTheme.dangerRed,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),

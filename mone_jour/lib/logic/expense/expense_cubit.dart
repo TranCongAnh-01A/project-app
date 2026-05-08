@@ -41,7 +41,8 @@ class ExpenseCubit extends Cubit<ExpenseState> {
       final totalIncome = await _repository.getTotalIncome(start, end);
 
       // Tính số dư lũy kế từ trước đến nay (không bao gồm tháng hiện tại)
-      final pastStart = DateTime(2000); // Mốc thời gian ban đầu giả định
+      // Dùng Unix epoch (1970) làm mốc — đảm bảo lấy được mọi giao dịch cũ
+      final pastStart = DateTime(1970);
       final pastEnd = start.subtract(const Duration(milliseconds: 1));
       final pastIncome = await _repository.getTotalIncome(pastStart, pastEnd);
       final pastExpense = await _repository.getTotalExpense(pastStart, pastEnd);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
+import '../../../core/constants/categories.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../data/models/expense.dart';
+import '../../../core/utils/currency_input_formatter.dart';
 import '../../../data/models/fixed_expense.dart';
 import '../../../logic/budget/budget_cubit.dart';
 import '../../../logic/budget/budget_state.dart';
@@ -14,6 +16,7 @@ import '../../../logic/fixed_expense/fixed_expense_cubit.dart';
 import '../../../logic/fixed_expense/fixed_expense_state.dart';
 import '../../widgets/budget_progress_card.dart';
 import '../../widgets/category_picker.dart';
+import '../../widgets/expense_action_sheet.dart';
 import '../../widgets/fixed_expense_card.dart';
 import '../../widgets/grouped_transaction_list.dart';
 import '../../widgets/summary_card.dart';
@@ -115,8 +118,8 @@ class HomeScreen extends StatelessWidget {
                   return GroupedTransactionList(
                     expenses: state.expenses,
                     maxItems: 10,
-                    onTap: (expense) => _confirmDelete(context, expense),
-                    onLongPress: (expense) => _confirmDelete(context, expense),
+                    onTap: (expense) => showExpenseActionSheet(context, expense),
+                    onLongPress: (expense) => showExpenseActionSheet(context, expense),
                   );
                 }
                 return const Center(child: CircularProgressIndicator());
@@ -138,34 +141,12 @@ class HomeScreen extends StatelessWidget {
     return 'Chào buổi tối 🌙';
   }
 
-  /// Dialog xác nhận xóa chi tiêu.
-  void _confirmDelete(BuildContext context, Expense expense) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa giao dịch?'),
-        content: const Text('Bạn có chắc muốn xóa khoản này? Không thể hoàn tác.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () {
-              context.read<ExpenseCubit>().deleteExpense(expense.id);
-              Navigator.pop(dialogContext);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   /// Section cuộn ngang hiển thị danh sách template.
+  ///
+  /// Hiển thị tối đa 3 card vừa màn hình, lướt ngang để xem thêm.
+  /// Khi có >3 mục → hiện nút "Xem tất cả" mở bottom sheet danh sách đầy đủ.
   Widget _buildFixedExpenseSection(
     BuildContext context,
     List<FixedExpense> templates,
@@ -187,36 +168,192 @@ class HomeScreen extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
-              Text(
-                '${templates.length} mục',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Chỉ hiện "Xem tất cả" khi có nhiều hơn 3 mục
+                  if (templates.length > 3)
+                    TextButton(
+                      onPressed: () =>
+                          _showAllFixedExpenses(context, templates),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                      ),
+                      child: Text(
+                        'Tất cả (${templates.length})',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  TextButton.icon(
+                    onPressed: () => _showTemplateSheet(context),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Thêm'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
         SizedBox(
           height: 120,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: templates.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final template = templates[index];
-              return FixedExpenseCard(
-                template: template,
-                onTap: () => _showConfirmDialog(context, template),
-                onLongPress: () => _showTemplateOptionsDialog(
-                  context,
-                  template,
+          child: PageView.builder(
+            controller: PageController(viewportFraction: 1.0),
+            itemCount: (templates.length / 3).ceil(),
+            itemBuilder: (context, pageIndex) {
+              final startIndex = pageIndex * 3;
+              final endIndex =
+                  (startIndex + 3).clamp(0, templates.length);
+              final pageTemplates =
+                  templates.sublist(startIndex, endIndex);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    for (int i = 0; i < pageTemplates.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 10),
+                      Expanded(
+                        child: FixedExpenseCard(
+                          template: pageTemplates[i],
+                          onTap: () => _showFixedExpenseActions(
+                            context,
+                            pageTemplates[i],
+                          ),
+                        ),
+                      ),
+                    ],
+                    // Giữ layout cân bằng khi trang cuối ít hơn 3 mục
+                    for (int i = pageTemplates.length; i < 3; i++) ...[
+                      const SizedBox(width: 10),
+                      const Expanded(child: SizedBox()),
+                    ],
+                  ],
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+
+  /// Bottom sheet hiển thị tất cả chi tiêu cố định dạng danh sách dọc.
+  void _showAllFixedExpenses(
+    BuildContext context,
+    List<FixedExpense> templates,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            // Handle bar
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outline
+                      .withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Chi tiêu cố định (${templates.length})',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+
+            // Danh sách
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                itemCount: templates.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, index) {
+                  final template = templates[index];
+                  final category = getCategoryById(template.categoryId);
+
+                  return ListTile(
+                    leading: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        category.icon,
+                        color: category.color,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      template.title,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    subtitle: Text(
+                      formatVND(template.amount),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.expenseRed,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showFixedExpenseActions(context, template);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -403,7 +540,9 @@ class HomeScreen extends StatelessWidget {
     final isEdit = editCategoryId != null;
     String selectedCategory = editCategoryId ?? 'food';
     final amountController = TextEditingController(
-      text: editAmount != null ? editAmount.toStringAsFixed(0) : '',
+      text: editAmount != null
+          ? NumberFormat('#,###', 'vi_VN').format(editAmount.round())
+          : '',
     );
 
     showModalBottomSheet(
@@ -482,6 +621,7 @@ class HomeScreen extends StatelessWidget {
                       keyboardType: TextInputType.number,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
+                        CurrencyInputFormatter(),
                       ],
                       autofocus: !isEdit,
                       decoration: InputDecoration(
@@ -512,9 +652,9 @@ class HomeScreen extends StatelessWidget {
                                   Navigator.pop(sheetContext);
                                 },
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFFEF4444),
+                                  foregroundColor: AppTheme.dangerRed,
                                   side: const BorderSide(
-                                    color: Color(0xFFEF4444),
+                                    color: AppTheme.dangerRed,
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
@@ -532,9 +672,10 @@ class HomeScreen extends StatelessWidget {
                             height: 50,
                             child: FilledButton(
                               onPressed: () {
-                                final amount = double.tryParse(
-                                  amountController.text.trim(),
-                                );
+                                final cleanText = amountController.text
+                                    .trim()
+                                    .replaceAll(RegExp(r'[^\d]'), '');
+                                final amount = double.tryParse(cleanText);
                                 if (amount == null || amount <= 0) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
@@ -542,7 +683,7 @@ class HomeScreen extends StatelessWidget {
                                         'Số tiền phải lớn hơn 0',
                                       ),
                                       backgroundColor:
-                                          const Color(0xFFEF4444),
+                                          AppTheme.dangerRed,
                                       behavior: SnackBarBehavior.floating,
                                       shape: RoundedRectangleBorder(
                                         borderRadius:
@@ -588,59 +729,13 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Dialog xác nhận thanh toán chi tiêu cố định.
-  void _showConfirmDialog(BuildContext context, FixedExpense template) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(Icons.payment, size: 36),
-        title: const Text('Xác nhận thanh toán'),
-        content: Text(
-          'Ghi nhận ${formatVND(template.amount)} cho "${template.title}"?\n\n'
-          'Giao dịch sẽ được lưu vào lịch sử ngay lập tức.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () {
-              context
-                  .read<FixedExpenseCubit>()
-                  .confirmFixedExpense(template);
-              Navigator.pop(dialogContext);
+  /// Bottom sheet hành động khi nhấn vào chi tiêu cố định.
+  ///
+  /// Gộp 3 chức năng: Xác nhận thanh toán + Chỉnh sửa + Xóa
+  /// vào 1 sheet duy nhất thay vì tách tap/longpress riêng biệt.
+  void _showFixedExpenseActions(BuildContext context, FixedExpense template) {
+    final category = getCategoryById(template.categoryId);
 
-              // Hiện snackbar xác nhận
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '✅ Đã ghi nhận ${formatVND(template.amount)} — ${template.title}',
-                  ),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  backgroundColor: AppTheme.incomeGreen,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.expenseRed,
-            ),
-            child: const Text('Đồng ý'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Bottom sheet tùy chọn khi long press template (Sửa / Xóa).
-  void _showTemplateOptionsDialog(
-    BuildContext context,
-    FixedExpense template,
-  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -656,7 +751,7 @@ class HomeScreen extends StatelessWidget {
               Container(
                 width: 40,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Theme.of(context)
                       .colorScheme
@@ -665,20 +760,96 @@ class HomeScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              // Tiêu đề
+
+              // Thông tin template
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Text(
-                  template.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        category.icon,
+                        color: category.color,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            template.title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            formatVND(template.amount),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: AppTheme.expenseRed,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
+              const SizedBox(height: 12),
               const Divider(),
-              // Sửa
+
+              // Xác nhận thanh toán
               ListTile(
-                leading: const Icon(Icons.edit_outlined, color: Color(0xFF60A5FA)),
+                leading: const Icon(
+                  Icons.payment_rounded,
+                  color: AppTheme.incomeGreen,
+                ),
+                title: const Text('Xác nhận thanh toán'),
+                subtitle: Text(
+                  'Ghi nhận ${formatVND(template.amount)} vào hôm nay',
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  context
+                      .read<FixedExpenseCubit>()
+                      .confirmFixedExpense(template);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '✅ Đã ghi nhận ${formatVND(template.amount)} — ${template.title}',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      backgroundColor: AppTheme.incomeGreen,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+
+              // Chỉnh sửa
+              ListTile(
+                leading: const Icon(
+                  Icons.edit_outlined,
+                  color: Color(0xFF60A5FA),
+                ),
                 title: const Text('Chỉnh sửa'),
                 subtitle: const Text('Thay đổi tên, số tiền, danh mục'),
                 onTap: () {
@@ -686,52 +857,53 @@ class HomeScreen extends StatelessWidget {
                   _showTemplateSheet(context, editTemplate: template);
                 },
               ),
+
               // Xóa
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppTheme.dangerRed,
+                ),
                 title: const Text('Xóa mẫu'),
                 subtitle: const Text('Lịch sử giao dịch không bị ảnh hưởng'),
                 onTap: () {
                   Navigator.pop(sheetContext);
-                  _confirmDeleteTemplate(context, template);
+                  // Dialog xác nhận xóa
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Xóa chi tiêu cố định?'),
+                      content: Text(
+                        'Xóa mẫu "${template.title}"?\n'
+                        'Lịch sử giao dịch đã tạo từ mẫu này sẽ không bị ảnh hưởng.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Hủy'),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            context
+                                .read<FixedExpenseCubit>()
+                                .deleteTemplate(template.id);
+                            Navigator.pop(dialogContext);
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppTheme.expenseRed,
+                          ),
+                          child: const Text('Xóa'),
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
+
               const SizedBox(height: 8),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  /// Dialog xác nhận xóa template.
-  void _confirmDeleteTemplate(BuildContext context, FixedExpense template) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa chi tiêu cố định?'),
-        content: Text(
-          'Xóa mẫu "${template.title}"?\n'
-          'Lịch sử giao dịch đã tạo từ mẫu này sẽ không bị ảnh hưởng.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () {
-              context
-                  .read<FixedExpenseCubit>()
-                  .deleteTemplate(template.id);
-              Navigator.pop(dialogContext);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.expenseRed,
-            ),
-            child: const Text('Xóa'),
-          ),
-        ],
       ),
     );
   }
@@ -786,7 +958,7 @@ class _TemplateSheetState extends State<_TemplateSheet> {
     if (_isEditMode) {
       final t = widget.editTemplate!;
       _titleController.text = t.title;
-      _amountController.text = t.amount.toStringAsFixed(0);
+      _amountController.text = NumberFormat('#,###', 'vi_VN').format(t.amount.round());
       _noteController.text = t.note ?? '';
       _selectedCategory = t.categoryId;
     }
@@ -855,7 +1027,10 @@ class _TemplateSheetState extends State<_TemplateSheet> {
             TextField(
               controller: _amountController,
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                CurrencyInputFormatter(),
+              ],
               decoration: InputDecoration(
                 labelText: 'Số tiền (VND)',
                 hintText: '0',
@@ -902,7 +1077,7 @@ class _TemplateSheetState extends State<_TemplateSheet> {
               child: FilledButton(
                 onPressed: _save,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
+                  backgroundColor: AppTheme.actionGreen,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -929,7 +1104,8 @@ class _TemplateSheetState extends State<_TemplateSheet> {
       return;
     }
 
-    final amount = double.tryParse(amountText);
+    final cleanAmountText = amountText.replaceAll(RegExp(r'[^\d]'), '');
+    final amount = double.tryParse(cleanAmountText);
     if (amount == null || amount <= 0) {
       _showError('Số tiền phải lớn hơn 0');
       return;
@@ -965,7 +1141,7 @@ class _TemplateSheetState extends State<_TemplateSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: const Color(0xFFEF4444),
+        backgroundColor: AppTheme.dangerRed,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),

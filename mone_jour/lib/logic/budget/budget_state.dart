@@ -34,7 +34,7 @@ class BudgetProgress extends Equatable {
   }
 
   @override
-  List<Object?> get props => [categoryId, amountLimit, currentSpending];
+  List<Object?> get props => [categoryId, amountLimit, currentSpending, budgetId];
 }
 
 /// Mức độ cảnh báo budget

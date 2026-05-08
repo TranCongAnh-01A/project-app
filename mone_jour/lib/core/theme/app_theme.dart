@@ -26,9 +26,11 @@ class AppTheme {
   static const surfaceWhite = Color(0xFFFFFFFF);
 
   // ── Màu ngữ nghĩa ──
-  static const incomeGreen = Color(0xFF00B894);
-  static const expenseRed = Color(0xFFE17055);
-  static const warningAmber = Color(0xFFF5A623);
+  static const incomeGreen = Color(0xFF00B894);  // Hiển thị số tiền thu nhập
+  static const expenseRed = Color(0xFFE17055);   // Hiển thị số tiền chi tiêu
+  static const warningAmber = Color(0xFFF5A623); // Cảnh báo ngưỡng budget
+  static const dangerRed = Color(0xFFEF4444);    // Hành động nguy hiểm (xóa, lỗi)
+  static const actionGreen = Color(0xFF10B981);  // Nút xác nhận/lưu tích cực
 
   // ── Text ──
   static const textPrimary = Color(0xFF2D3436);

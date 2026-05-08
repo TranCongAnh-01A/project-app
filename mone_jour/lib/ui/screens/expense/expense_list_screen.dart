@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../data/models/expense.dart';
 import '../../../logic/expense/expense_cubit.dart';
 import '../../../logic/expense/expense_state.dart';
+import '../../widgets/expense_action_sheet.dart';
 import '../../widgets/grouped_transaction_list.dart';
 import '../../widgets/summary_card.dart';
 import 'add_expense_screen.dart';
@@ -128,8 +127,8 @@ class ExpenseListScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: GroupedTransactionList(
               expenses: state.expenses,
-              onTap: (expense) => _confirmDelete(context, expense),
-              onLongPress: (expense) => _confirmDelete(context, expense),
+              onTap: (expense) => showExpenseActionSheet(context, expense),
+              onLongPress: (expense) => showExpenseActionSheet(context, expense),
             ),
           ),
 
@@ -181,30 +180,4 @@ class ExpenseListScreen extends StatelessWidget {
     );
   }
 
-  /// Dialog xác nhận xóa chi tiêu.
-  void _confirmDelete(BuildContext context, Expense expense) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Xóa giao dịch?'),
-        content: const Text('Bạn có chắc muốn xóa khoản này? Không thể hoàn tác.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () {
-              context.read<ExpenseCubit>().deleteExpense(expense.id);
-              Navigator.pop(dialogContext);
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.expenseRed,
-            ),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
-    );
-  }
 }

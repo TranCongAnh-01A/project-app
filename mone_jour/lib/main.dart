@@ -22,8 +22,8 @@ void main() async {
   await DatabaseService.initialize();
 
   FlutterError.onError = (FlutterErrorDetails details) {
-    print('FLUTTER_ERROR: ${details.exception}');
-    print('STACK_TRACE: ${details.stack}');
+    debugPrint('FLUTTER_ERROR: ${details.exception}');
+    debugPrint('STACK_TRACE: ${details.stack}');
   };
 
   runApp(const MoneJourApp());
