@@ -40,14 +40,7 @@ class HomeScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          // Nút thêm template chi tiêu cố định
-          IconButton(
-            onPressed: () => _showTemplateSheet(context),
-            icon: const Icon(Icons.bookmark_add_outlined),
-            tooltip: 'Thêm chi tiêu cố định',
-          ),
-        ],
+        actions: const [],
       ),
       body: SingleChildScrollView(
         child: Column(

@@ -99,7 +99,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ],
                 selected: {_isIncome},
                 onSelectionChanged: (value) {
-                  setState(() => _isIncome = value.first);
+                  setState(() {
+                    _isIncome = value.first;
+                    // Thu nhập → tự gán category 'income', không cần chọn
+                    // Chi tiêu → reset về 'food' nếu đang ở 'income'
+                    if (_isIncome) {
+                      _selectedCategory = 'income';
+                    } else if (_selectedCategory == 'income') {
+                      _selectedCategory = 'food';
+                    }
+                  });
                 },
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -153,18 +162,19 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
             const SizedBox(height: 24),
 
-            // ── Danh mục ──
-            Text(
-              'Danh mục',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
+            // ── Danh mục (chỉ hiện khi chi tiêu) ──
+            if (!_isIncome) ...[
+              Text(
+                'Danh mục',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            CategoryPicker(
-              selectedCategoryId: _selectedCategory,
-              onSelected: (id) => setState(() => _selectedCategory = id),
-            ),
+              CategoryPicker(
+                selectedCategoryId: _selectedCategory,
+                onSelected: (id) => setState(() => _selectedCategory = id),
+              ),
+            ],
 
             const SizedBox(height: 24),
 

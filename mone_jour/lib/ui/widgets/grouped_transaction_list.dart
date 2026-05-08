@@ -105,7 +105,10 @@ class _DayGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dayBalance = calculateDayBalance(expenses);
+    // Chỉ tổng chi tiêu, bỏ qua thu nhập
+    final dayExpenseTotal = expenses
+        .where((e) => !e.isIncome)
+        .fold<double>(0.0, (sum, e) => sum + e.amount);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -116,7 +119,6 @@ class _DayGroup extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 18, bottom: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   '${date.day} THÁNG ${date.month}',
@@ -127,16 +129,17 @@ class _DayGroup extends StatelessWidget {
                     fontSize: 11,
                   ),
                 ),
-                Text(
-                  formatVNDSigned(dayBalance),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: dayBalance >= 0
-                        ? AppTheme.incomeGreen
-                        : AppTheme.expenseRed,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                if (dayExpenseTotal > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    formatVND(dayExpenseTotal),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

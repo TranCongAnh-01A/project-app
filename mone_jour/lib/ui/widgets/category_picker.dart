@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/categories.dart';
 
-/// Grid picker cho danh mục chi tiêu.
+/// Component chọn danh mục chi tiêu.
 ///
-/// Hiển thị 9 danh mục dạng lưới 3x3, mỗi ô có icon + tên.
-/// Ô được chọn có nền hồng đậm hơn + viền màu danh mục.
+/// Hiển thị các danh mục dạng Wrap ChoiceChip (loại bỏ 'income').
+/// Chip được chọn có nền và viền màu tương ứng của danh mục.
 class CategoryPicker extends StatelessWidget {
   final String selectedCategoryId;
   final ValueChanged<String> onSelected;
@@ -18,65 +18,55 @@ class CategoryPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.1,
-      ),
-      itemCount: defaultExpenseCategories.length,
-      itemBuilder: (context, index) {
-        final category = defaultExpenseCategories[index];
-        final isSelected = category.id == selectedCategoryId;
+    final theme = Theme.of(context);
+    final expenseCategories = defaultExpenseCategories
+        .where((c) => c.id != 'income')
+        .toList();
 
-        return GestureDetector(
-          onTap: () => onSelected(category.id),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? category.color.withValues(alpha: 0.12)
-                  : Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: expenseCategories.map((category) {
+        final isSelected = category.id == selectedCategoryId;
+        
+        return ChoiceChip(
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                category.icon,
+                size: 16,
                 color: isSelected
                     ? category.color
-                    : Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-                width: isSelected ? 2 : 1,
+                    : theme.colorScheme.onSurfaceVariant,
               ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  category.icon,
-                  color: isSelected
-                      ? category.color
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 28,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  category.name,
-                  style: TextStyle(
-                    color: isSelected
-                        ? category.color
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                    fontSize: 11,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+              const SizedBox(width: 6),
+              Text(category.name),
+            ],
           ),
+          selected: isSelected,
+          onSelected: (_) => onSelected(category.id),
+          selectedColor: category.color.withValues(alpha: 0.15),
+          backgroundColor: theme.colorScheme.surface,
+          side: BorderSide(
+            color: isSelected
+                ? category.color
+                : theme.colorScheme.outline.withValues(alpha: 0.5),
+          ),
+          labelStyle: TextStyle(
+            color: isSelected
+                ? category.color
+                : theme.colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 13,
+          ),
+          showCheckmark: false,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         );
-      },
+      }).toList(),
     );
   }
 }
