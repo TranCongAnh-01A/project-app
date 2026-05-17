@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../logic/theme/theme_cubit.dart';
+import '../../widgets/tutorial_dialog.dart';
+import '../../widgets/animated_slide_down.dart';
+import 'widgets/settings_sections.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -13,6 +13,16 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.info_outline_rounded),
+          tooltip: 'Hướng dẫn sử dụng',
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (_) => const TutorialDialog(),
+            );
+          },
+        ),
         title: Text(
           'Cài đặt',
           style: theme.textTheme.titleLarge?.copyWith(
@@ -22,54 +32,61 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        children: [
-          Text(
-            'Giao diện',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
+        children: const [
+          FadeInSlideDown(
+            index: 0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SettingsSectionTitle(title: 'Đám mây'),
+                SizedBox(height: 12),
+                CloudSyncCard(),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: theme.cardTheme.color ?? Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outline),
-            ),
-            child: BlocBuilder<ThemeCubit, ThemeMode>(
-              builder: (context, themeMode) {
-                // Nếu themeMode == system, ta kiểm tra độ sáng hệ thống để lấy giá trị tương đối
-                final isSystemDark =
-                    MediaQuery.of(context).platformBrightness == Brightness.dark;
-                final isDark = themeMode == ThemeMode.dark ||
-                    (themeMode == ThemeMode.system && isSystemDark);
 
-                return SwitchListTile(
-                  title: Text(
-                    'Chế độ tối (Dark Mode)',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Đổi màu nền đen để bảo vệ mắt',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  value: isDark,
-                  activeThumbColor: Colors.white,
-                  activeTrackColor: AppTheme.primaryPastel,
-                  onChanged: (value) {
-                    context.read<ThemeCubit>().toggleTheme(value);
-                  },
-                );
-              },
+          SizedBox(height: 24),
+          FadeInSlideDown(
+            index: 1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SettingsSectionTitle(title: 'Giao diện'),
+                SizedBox(height: 12),
+                ThemeCard(),
+              ],
             ),
           ),
+
+          SizedBox(height: 24),
+          FadeInSlideDown(
+            index: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SettingsSectionTitle(title: 'Bảo mật'),
+                SizedBox(height: 12),
+                SecurityCard(),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 24),
+          FadeInSlideDown(
+            index: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SettingsSectionTitle(title: 'Quản lý dữ liệu'),
+                SizedBox(height: 12),
+                DataCard(),
+              ],
+            ),
+          ),
+          SizedBox(height: 40),
         ],
       ),
     );
   }
 }
+

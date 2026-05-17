@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import '../screens/expense/expense_list_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/journal/journal_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/tutorial_dialog.dart';
 
 /// Bottom Navigation chính của app.
 ///
-/// 4 tab: Trang chủ | Chi tiêu | Nhật ký | Cài đặt
+/// 4 tab: Trang chủ | Chi tiêu | Ghi chú | Cài đặt
 /// Dùng IndexedStack để giữ state khi chuyển tab (không rebuild).
 class AppNavigation extends StatefulWidget {
   const AppNavigation({super.key});
@@ -22,20 +25,51 @@ class _AppNavigationState extends State<AppNavigation> {
   final _screens = const [
     HomeScreen(),
     ExpenseListScreen(),
-    _PlaceholderScreen(
-      icon: Icons.book_rounded,
-      title: 'Nhật ký',
-      subtitle: 'Nhật ký cảm xúc (sắp ra mắt)',
-    ),
+    JournalScreen(),
     SettingsScreen(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowTutorial();
+    });
+  }
+
+  Future<void> _checkAndShowTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isTutorialShown = prefs.getBool('is_tutorial_shown') ?? false;
+
+    if (!isTutorialShown && mounted) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const TutorialDialog(),
+      );
+      
+      // Sau khi đóng dialog, đánh dấu là đã xem
+      await prefs.setBool('is_tutorial_shown', true);
+      
+      // Hiện SnackBar hướng dẫn vị trí nút (!)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Để xem lại hướng dẫn, hãy ấn vào biểu tượng (i) ở góc trên bên trái!'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 150),
+        child: _screens[_currentIndex],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -55,9 +89,9 @@ class _AppNavigationState extends State<AppNavigation> {
             label: 'Chi tiêu',
           ),
           NavigationDestination(
-            icon: Icon(Icons.book_outlined),
-            selectedIcon: Icon(Icons.book_rounded),
-            label: 'Nhật ký',
+            icon: Icon(Icons.note_alt_outlined),
+            selectedIcon: Icon(Icons.note_alt_rounded),
+            label: 'Ghi chú',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
@@ -70,56 +104,3 @@ class _AppNavigationState extends State<AppNavigation> {
   }
 }
 
-/// Placeholder screen cho các tab chưa implement.
-class _PlaceholderScreen extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _PlaceholderScreen({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          title,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 64,
-              color: theme.colorScheme.primary.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -23,7 +23,8 @@ class Expense {
   String? note;
 
   /// Ngày giao dịch (không bao gồm giờ)
-  @Index()
+  /// Composite index [date, isIncome] tối ưu query getTotalExpense/Income
+  @Index(composite: [CompositeIndex('isIncome')])
   late DateTime date;
 
   /// Đánh dấu đây là khoản thu nhập (true) hay chi tiêu (false)
@@ -31,4 +32,7 @@ class Expense {
 
   /// Thời điểm tạo record
   late DateTime createdAt;
+
+  /// Đánh dấu đây có phải là giao dịch sinh ra từ chi tiêu cố định không
+  bool isFixed = false;
 }

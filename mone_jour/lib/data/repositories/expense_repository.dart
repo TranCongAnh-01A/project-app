@@ -43,6 +43,23 @@ class ExpenseRepository {
     return getByDateRange(start, end);
   }
 
+  /// Tìm kiếm giao dịch với các điều kiện tuỳ chọn.
+  Future<List<Expense>> searchExpenses({
+    String? note,
+    double? minAmount,
+    double? maxAmount,
+    String? categoryId,
+  }) async {
+    return _db.expenses
+        .filter()
+        .optional(note != null && note.isNotEmpty, (q) => q.noteContains(note!, caseSensitive: false))
+        .optional(minAmount != null, (q) => q.amountGreaterThan(minAmount! - 0.01))
+        .optional(maxAmount != null, (q) => q.amountLessThan(maxAmount! + 0.01))
+        .optional(categoryId != null && categoryId.isNotEmpty, (q) => q.categoryEqualTo(categoryId!))
+        .sortByDateDesc()
+        .findAll();
+  }
+
   /// Tổng chi tiêu (chỉ khoản chi, không tính thu nhập) trong khoảng thời gian.
   Future<double> getTotalExpense(DateTime start, DateTime end) async {
     final expenses = await _db.expenses

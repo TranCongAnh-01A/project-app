@@ -1,242 +1,248 @@
-# MoneJour — Project Context (Bản Đồ Trí Nhớ)
+# 📋 PROJECT_CONTEXT — MoneJour (Giản Ký)
 
-> Cập nhật: 2026-05-08 21:50 | Phiên bản: v1.0.0 (MVP) | Platform: Android, iOS
-> Quét toàn bộ codebase: **33 files source** | **~4,080 dòng code** (không tính generated `.g.dart`)
+> **Cập nhật lần cuối:** 2026-05-17
+> **Phiên bản:** 1.0.0+1
+> **Trạng thái:** MVP hoàn thiện — Sẵn sàng production
 
 ---
 
 ## 1. Tổng Quan Dự Án
 
-**MoneJour (Money + Journal)** — Ứng dụng quản lý chi tiêu cá nhân kết hợp nhật ký cảm xúc.
-100% offline, không cần server, không cần internet.
+**MoneJour (Giản Ký)** là ứng dụng **quản lý chi tiêu cá nhân + ghi chú nhật ký** dành cho người Việt, xây dựng bằng Flutter theo kiến trúc **Offline-first** (100% hoạt động không cần internet).
 
-### Kiến Trúc
-
-```
-┌───────────────────────────────────────────────┐
-│              Flutter Mobile App               │
-│  ┌──────────────┐  ┌───────────┐  ┌────────┐  │
-│  │  4 Cubits     │  │  4 Screens│  │ Charts │  │
-│  │  (State Mgmt) │  │  (UI)     │  │(fl_ch) │  │
-│  └──────┬────────┘  └───────────┘  └────────┘  │
-│         │                                      │
-│  ┌──────▼───────────────────────┐              │
-│  │     4 Repositories           │              │
-│  │  Expense | Journal | Budget  │              │
-│  │  FixedExpense                │              │
-│  └──────┬───────────────────────┘              │
-│         │                                      │
-│  ┌──────▼──────┐                               │
-│  │ Isar DB     │ ← Local NoSQL (4 Collections) │
-│  └─────────────┘                               │
-└───────────────────────────────────────────────┘
-```
-
-**KHÔNG CÓ:** Backend, Server, API, Docker, Cloud Database.
+### Đặc điểm cốt lõi
+- 🔒 **Offline-first**: Mọi dữ liệu lưu local bằng Isar NoSQL Database
+- 📊 **Quản lý chi tiêu**: Thu/Chi, Ngân sách theo danh mục, Chi tiêu cố định (template)
+- 📝 **Nhật ký cá nhân**: Ghi chú tự do
+- ☁️ **Cloud Sync tùy chọn**: Backup/Restore qua Google Drive (appDataFolder)
+- 🔐 **Bảo mật**: PIN code + Biometric + Câu hỏi bảo mật
+- 🌙 **Dark Mode**: Hỗ trợ Light/Dark theme
+- 🇻🇳 **Tiếng Việt**: Locale vi_VN, format tiền VND
 
 ---
 
 ## 2. Tech Stack
 
-| Tầng | Công nghệ | Vai trò |
-|------|-----------|---------|
-| **Framework** | Flutter 3.19+ / Dart 3.3+ | Cross-platform mobile |
-| **Database** | Isar 3.1 (NoSQL) | Local storage, offline-first, 4 collections |
-| **State Mgmt** | flutter_bloc 9.x (Cubit) | 4 Cubits + sealed states |
-| **Charts** | fl_chart 0.69 | Biểu đồ (chưa implement) |
-| **Format** | intl 0.20.2 | Format tiền VND + ngày tháng |
-| **Utilities** | path_provider, shared_preferences | File path + theme persist |
-| **Equality** | equatable 2.x | Value equality cho States |
-
-> ⚠️ `uuid: ^4.5.1` khai báo trong pubspec nhưng **CHƯA BAO GIỜ import/sử dụng** → nên xóa.
+| Tầng | Công nghệ | Phiên bản |
+|------|-----------|-----------|
+| **Framework** | Flutter | ≥3.19.0 |
+| **Ngôn ngữ** | Dart | ≥3.3.0 <4.0.0 |
+| **Database** | Isar (NoSQL) | ^3.1.0+1 |
+| **State Management** | flutter_bloc (Cubit) | ^9.0.0 |
+| **Charts** | fl_chart | ^0.69.0 |
+| **Cloud Sync** | Google Drive API (googleapis) | ^16.0.0 |
+| **Auth** | google_sign_in | ^6.2.2 |
+| **Export** | archive (ZIP), share_plus | ^4.0.9, ^10.0.0 |
+| **Import** | file_picker | ^8.1.4 |
+| **Biometric** | local_auth | ^3.0.1 |
+| **Animation** | lottie | ^3.3.3 |
+| **Locale** | intl, flutter_localizations | ^0.20.2 |
+| **Preferences** | shared_preferences | ^2.5.5 |
 
 ---
 
-## 3. Cấu Trúc Thư Mục (Trạng Thái Thực Tế)
+## 3. Kiến Trúc Hệ Thống
 
 ```
 mone_jour/lib/
-├── main.dart                              # Entry point + MultiBlocProvider (77 dòng)
+├── main.dart                          # Entry point — khởi tạo DB, locale, BlocProviders
 ├── core/
-│   ├── constants/categories.dart          # 9 danh mục (ExpenseCategory + getCategoryById) — 87 dòng
-│   ├── theme/app_theme.dart               # Minimalist Pastel Light/Dark — 366 dòng
+│   ├── constants/
+│   │   └── categories.dart            # 9 danh mục chi tiêu mặc định
+│   ├── theme/
+│   │   └── app_theme.dart             # Material 3 theme (Light/Dark) — Palette Blue Pastel
 │   └── utils/
-│       ├── currency_formatter.dart        # formatVND(), formatVNDSigned() — 20 dòng
-│       ├── currency_input_formatter.dart  # TextInputFormatter cho input tiền — 41 dòng
-│       ├── date_formatter.dart            # formatDateShort/Full/MonthYear, isSameDay — 29 dòng
-│       └── expense_grouper.dart           # groupExpensesByDate(), calculateDayBalance() — 34 dòng
+│       ├── currency_formatter.dart    # formatVND() — 1500000 → "1.500.000 ₫"
+│       ├── currency_input_formatter.dart # TextInputFormatter auto format hàng nghìn
+│       ├── date_formatter.dart        # Format ngày kiểu VN
+│       └── expense_grouper.dart       # Gom nhóm giao dịch theo ngày
 ├── data/
-│   ├── models/                            # 4 Isar Collections + .g.dart generated
-│   │   ├── expense.dart                   # Chi tiêu/thu nhập — 35 dòng
-│   │   ├── journal_entry.dart             # Nhật ký cảm xúc — 35 dòng
-│   │   ├── budget.dart                    # Hạn mức theo tháng — 28 dòng
-│   │   └── fixed_expense.dart             # Template chi tiêu cố định — 32 dòng
-│   └── repositories/                      # 4 Repository classes
-│       ├── expense_repository.dart        # CRUD + thống kê + getCategorySpending — 112 dòng
-│       ├── journal_repository.dart        # CRUD + filter mood + getAverageMood — 69 dòng
-│       ├── budget_repository.dart         # upsert + getByMonth + getByCategoryMonth — 67 dòng
-│       └── fixed_expense_repository.dart  # CRUD + executeFixedExpense — 61 dòng
-├── logic/
-│   ├── expense/    (cubit + state)        # ✅ Reactive + carriedOverBalance — 176 dòng
-│   ├── budget/     (cubit + state)        # ✅ Dual watcher + BudgetProgress — 227 dòng
-│   ├── fixed_expense/ (cubit + state)     # ✅ CRUD + execute — 116 dòng
-│   ├── theme/      (cubit)               # ✅ Dark/Light + SharedPreferences — 27 dòng
-│   ├── journal/                           # ❌ TRỐNG (Repo sẵn sàng, cần Cubit)
-│   ├── stats/                             # ❌ TRỐNG
-│   └── settings/                          # ❌ TRỐNG
+│   ├── models/                        # Isar @collection
+│   │   ├── expense.dart               # Giao dịch thu/chi (7 fields)
+│   │   ├── budget.dart                # Hạn mức theo danh mục/tháng
+│   │   ├── fixed_expense.dart         # Template chi tiêu cố định
+│   │   └── journal.dart               # Ghi chú cá nhân
+│   └── repositories/                  # Repository pattern — tách DB logic
+│       ├── expense_repository.dart    # CRUD + query + thống kê
+│       ├── budget_repository.dart     # Upsert + query theo tháng
+│       ├── fixed_expense_repository.dart # CRUD + execute (clone → Expense)
+│       └── journal_repository.dart    # CRUD cơ bản
+├── logic/                             # Cubit (State Management)
+│   ├── expense/                       # ExpenseCubit + ExpenseState (sealed class)
+│   ├── budget/                        # BudgetCubit + BudgetState + BudgetProgress
+│   ├── fixed_expense/                 # FixedExpenseCubit + FixedExpenseState
+│   ├── journal/                       # JournalCubit + JournalState
+│   ├── stats/                         # StatsCubit + StatsState (Month/Year/Custom)
+│   ├── theme/                         # ThemeCubit (Light/Dark toggle)
+│   ├── settings/                      # SettingsCubit + SettingsState (PIN, Biometric)
+│   └── cloud_sync/                    # CloudSyncCubit (Google Drive backup/restore)
 ├── services/
-│   └── database_service.dart              # Isar Singleton (4 schemas) — 47 dòng
+│   ├── database_service.dart          # Singleton Isar instance
+│   ├── cloud_sync_service.dart        # Google Sign-In + Drive API wrapper
+│   ├── export_service.dart            # Export JSON + CSV ZIP
+│   └── import_service.dart            # Import JSON + CSV ZIP
 └── ui/
-    ├── navigation/app_navigation.dart     # 4 tabs + IndexedStack — 126 dòng
+    ├── navigation/
+    │   └── app_navigation.dart        # Bottom Nav (4 tab) + Tutorial dialog
     ├── screens/
-    │   ├── home/home_screen.dart           # 🔴 1159 dòng — CẦN REFACTOR KHẨN CẤP
+    │   ├── splash/splash_screen.dart  # Lottie animation → AuthWrapper
+    │   ├── auth/
+    │   │   ├── auth_wrapper.dart       # Auto-lock khi app paused
+    │   │   └── pin_screen.dart         # PIN verify/setup + Biometric + Câu hỏi bảo mật
+    │   ├── home/
+    │   │   ├── home_screen.dart        # Dashboard: Summary + Budget + Fixed Expense + Stats
+    │   │   └── widgets/
+    │   │       ├── budget_dialog.dart
+    │   │       ├── fixed_expense_actions_sheet.dart
+    │   │       └── template_sheet.dart
     │   ├── expense/
-    │   │   ├── add_expense_screen.dart     # Form thêm (312 dòng) — chưa hỗ trợ Edit
-    │   │   └── expense_list_screen.dart    # Danh sách + month selector — 211 dòng
-    │   ├── journal/                       # ❌ TRỐNG
-    │   ├── stats/                         # ❌ TRỐNG
-    │   └── settings/settings_screen.dart  # Toggle Dark/Light — 76 dòng
-    └── widgets/                           # 5 reusable widgets (đã xóa dead code)
-        ├── summary_card.dart              # ✅ 143 dòng — theme-aware
-        ├── budget_progress_card.dart      # ✅ 160 dòng — status color system
-        ├── category_picker.dart           # ✅ 73 dòng — Wrap + ChoiceChip
-        ├── fixed_expense_card.dart        # ✅ 98 dòng — ĐÃ FIX Dark Mode bug
-        └── grouped_transaction_list.dart  # ✅ 270 dòng — Group by date, empty state
+    │   │   ├── expense_list_screen.dart # Danh sách giao dịch + tìm kiếm/lọc
+    │   │   └── add_expense_screen.dart  # Form thêm/sửa giao dịch
+    │   ├── journal/
+    │   │   ├── journal_screen.dart     # Danh sách ghi chú
+    │   │   └── note_editor_screen.dart # Trình soạn thảo ghi chú
+    │   ├── stats/stats_screen.dart     # Biểu đồ tròn/cột + lọc Tháng/Năm/Tùy chọn
+    │   └── settings/settings_screen.dart # Cài đặt toàn diện
+    └── widgets/                        # Shared widgets
+        ├── animated_slide_down.dart
+        ├── budget_progress_card.dart
+        ├── category_picker.dart
+        ├── expense_action_sheet.dart
+        ├── filter_transaction_sheet.dart
+        ├── fixed_expense_card.dart
+        ├── grouped_transaction_list.dart
+        ├── summary_card.dart
+        └── tutorial_dialog.dart
 ```
 
 ---
 
-## 4. Trạng Thái Module
+## 4. Luồng Dữ Liệu (Data Flow)
 
-### ✅ Hoàn thành (~65% MVP)
+```mermaid
+flowchart TD
+    A[UI Screen] -->|User Action| B[Cubit]
+    B -->|CRUD Operations| C[Repository]
+    C -->|Read/Write| D[(Isar Database)]
+    D -->|watchLazy Stream| C
+    C -->|Auto Trigger| B
+    B -->|emit State| A
 
-- Isar Database (4 collections + Singleton)
-- 4 Data Models + 4 Repositories (full CRUD + thống kê)
-- 4 Cubits (Expense, Budget, FixedExpense, Theme)
-- Home Dashboard (summary + fixed expense actions + budget progress + recent transactions)
-- CRUD Chi tiêu (thêm/xóa — **thiếu sửa**)
-- CRUD Chi tiêu cố định (thêm/sửa/xóa + thanh toán 1 chạm + action sheet)
-- Hạn mức chi tiêu (thêm/sửa/xóa + progress bar + cảnh báo vượt ngưỡng)
-- Bottom Navigation 4 tabs + Dark/Light toggle
-- Theme System (Light + Dark complete)
-- Formatters (VND + date VN) + ExpenseGrouper
+    E[Cloud Sync] -->|Export JSON| F[Google Drive]
+    F -->|Restore JSON| E
+    E -->|Import/Export| D
+```
 
-### 🛠️ Đã sửa từ đợt audit trước
-
-- ✅ `fixed_expense_card.dart` — Đã sửa hardcode `Colors.white` → `Theme.of(context).colorScheme.surface`
-- ✅ `expense_card.dart` — Dead code đã bị XÓA khỏi project
-- ✅ Fixed expense — Đã thêm action sheet 3 chức năng (Thanh toán / Sửa / Xóa)
-- ✅ `currency_input_formatter.dart` — Regex đã đúng (`r'[^\d]'`)
-
-### ⏳ Chưa làm (~35% MVP)
-
-- JournalCubit + Journal Screen (CRUD + mood picker)
-- StatsCubit + Stats Screen (pie + bar chart dùng fl_chart)
-- Edit Expense (chỉnh sửa giao dịch — cubit method sẵn, thiếu UI)
-- Refactor `home_screen.dart` (1159 dòng → tách files)
-- Unit Tests
+**Pattern chung của các Cubit:**
+1. **Constructor** → Subscribe vào `repository.watchChanges()` (Isar stream)
+2. **User Action** → Gọi repository method → Isar ghi data
+3. **Isar Watcher** → Tự động trigger `_reload()` → emit state mới
+4. **UI** → `BlocBuilder` nhận state → rebuild tự động
 
 ---
 
-## 5. Bug Matrix (Trạng Thái Hiện Tại)
+## 5. Danh Mục Chi Tiêu Mặc Định (9 danh mục)
 
-### 🔴 CRITICAL
-
-| # | File | Vấn đề | Tác động |
-|---|------|--------|---------| 
-| 1 | `home_screen.dart` | **1159 dòng** — chứa 1 main widget + 1 StatefulWidget + 8 dialog/sheet functions | Không bảo trì được, vi phạm SRP cực kỳ nghiêm trọng. **Tệ hơn lần audit trước** (975→1159) |
-
-### 🟠 HIGH
-
-| # | File | Vấn đề | Tác động |
-|---|------|--------|---------|
-| 2 | `home_screen.dart:121-122` | `onTap` và `onLongPress` đều gọi `_confirmDelete` cho giao dịch thường | UX tệ — người dùng tap = xóa thay vì xem/sửa |
-| 3 | `expense_list_screen.dart:131-132` | Cùng vấn đề — cả tap lẫn longpress đều delete | Thiếu chức năng Edit Expense hoàn toàn |
-
-### 🟡 MEDIUM
-
-| # | File | Vấn đề | Tác động |
-|---|------|--------|---------|
-| 4 | Nhiều file | **Hai hệ màu "đỏ" xung đột** — `AppTheme.expenseRed` = `0xFFE17055` (cam pastel) nhưng nhiều nơi dùng `Color(0xFFEF4444)` (đỏ Tailwind) | Giao diện không thống nhất, 2 màu đỏ khác nhau cho cùng ngữ nghĩa "nguy hiểm/xóa" |
-| 5 | `home_screen.dart` + `expense_list_screen.dart` | `_confirmDelete()` duplicate code gần 100% | Vi phạm DRY — nên extract thành shared utility |
-| 6 | `expense_cubit.dart:44` | `DateTime(2000)` hardcode cho carried balance | Nên dùng constant có ý nghĩa hơn |
-| 7 | `main.dart:24-27` | `print()` cho error handler | Production không nên dùng print |
-| 8 | `pubspec.yaml` | `uuid: ^4.5.1` khai báo nhưng **KHÔNG BAO GIỜ import** | Tăng kích thước app thừa |
-| 9 | `app_theme.dart` | `minimalistLight` và `minimalistDark` duplicate ~200 dòng config | Nên extract common theme builder |
-| 10 | `budget_state.dart:37` | `BudgetProgress.props` không bao gồm `budgetId` | Có thể gây Equatable so sánh sai khi budgetId thay đổi |
-
-### 🔵 LOW
-
-| # | File | Vấn đề |
-|---|------|--------|
-| 11 | `logic/journal/`, `stats/`, `settings/` | Thư mục trống — cần implement |
-| 12 | `test/` | 0 unit test |
-| 13 | `currency_formatter.dart` | `formatVNDSigned()` định nghĩa nhưng chưa sử dụng |
-| 14 | Navigation tab "Nhật ký" | Placeholder, chưa có chức năng |
+| ID | Tên | Icon | Dùng cho |
+|----|-----|------|----------|
+| `food` | Ăn uống | 🍽️ restaurant | Chi tiêu |
+| `transport` | Di chuyển | 🚗 directions_car | Chi tiêu |
+| `shopping` | Mua sắm | 🛍️ shopping_bag | Chi tiêu |
+| `entertainment` | Giải trí | 🎬 movie | Chi tiêu |
+| `bills` | Hóa đơn | 🧾 receipt_long | Chi tiêu |
+| `health` | Sức khỏe | ❤️ favorite | Chi tiêu |
+| `education` | Học tập | 🎓 school | Chi tiêu |
+| `income` | Thu nhập | 💰 account_balance_wallet | Thu nhập |
+| `other` | Khác | ⋯ more_horiz | Cả hai |
 
 ---
 
-## 6. Chi Tiết Hardcoded Colors (Bug #4)
+## 6. Tính Năng Chi Tiết & Trạng Thái
 
-Vấn đề: Dự án sử dụng **2 hệ màu đỏ khác nhau** không nhất quán:
+### ✅ Đã Hoàn Thiện (Production Ready)
 
-| Màu | Hex | Nơi sử dụng |
-|-----|-----|-------------|
-| `AppTheme.expenseRed` | `#E17055` (cam-đỏ pastel) | summary_card, budget_progress_card, fixed_expense_card, expense_list_screen delete button |
-| Hardcode | `#EF4444` (đỏ Tailwind) | home_screen delete dialog, budget dialog delete, template save error, add_expense error snackbar |
-| Hardcode | `#10B981` (xanh lá) | add_expense save button, template sheet save button (thay vì dùng `AppTheme.incomeGreen = #00B894`) |
-
-**Tác động:** Nút "Xóa" ở home_screen là màu đỏ `#EF4444`, nhưng nút "Xóa" ở expense_list_screen lại là cam-đỏ `#E17055`. Không đồng bộ.
-
-**Giải pháp:** Thống nhất toàn bộ về `AppTheme.expenseRed` và `AppTheme.incomeGreen`, hoặc thêm `AppTheme.dangerRed` mới nếu cần tách biệt "chi tiêu" vs "hành động nguy hiểm".
-
----
-
-## 7. Điểm Mạnh Của Dự Án
-
-1. **Kiến trúc phân tầng rõ ràng:** Data → Logic → UI tách biệt chuẩn
-2. **Reactive system:** Isar `watchLazy()` → Cubit auto-reload → UI tự động cập nhật
-3. **Sealed class state:** Type-safe, compiler bắt lỗi tại build-time
-4. **Repository pattern:** Dễ swap DB engine, dễ mock test
-5. **Theme system:** Light/Dark hoàn chỉnh, persist SharedPreferences
-6. **Comment tiếng Việt xuất sắc:** Giải thích "tại sao" chứ không chỉ "cái gì"
-7. **Fixed Expense workflow tốt:** Action sheet gộp 3 chức năng (Pay/Edit/Delete) rất UX
-8. **Budget warning system:** 3 trạng thái (safe/warning/exceeded) với màu tương ứng
+| # | Module | Mô tả |
+|---|--------|-------|
+| 1 | **Chi tiêu/Thu nhập** | Thêm/Sửa/Xóa giao dịch, phân loại theo 9 danh mục |
+| 2 | **Số dư lũy kế** | Tính balance = Dư đầu kỳ + Thu nhập - Chi tiêu |
+| 3 | **Ngân sách (Budget)** | Set hạn mức theo danh mục/tháng, cảnh báo 80%/100% |
+| 4 | **Chi tiêu cố định** | Template 1-chạm → clone thành giao dịch thật |
+| 5 | **Nhật ký (Journal)** | CRUD ghi chú cá nhân |
+| 6 | **Thống kê (Stats)** | Biểu đồ tròn/cột, lọc theo Tháng/Năm/Khoảng tùy chỉnh |
+| 7 | **Export/Import** | JSON đơn file + CSV ZIP (4 file) |
+| 8 | **Cloud Sync** | Google Drive appDataFolder — backup/restore JSON |
+| 9 | **Bảo mật** | PIN 4 số + Biometric + Câu hỏi bảo mật + Auto-lock |
+| 10 | **Theme** | Light/Dark mode toggle |
+| 11 | **Splash** | Lottie animation (Cat Paw Loading) |
+| 12 | **Tutorial** | Dialog hướng dẫn lần đầu mở app |
+| 13 | **Tìm kiếm/Lọc** | Filter giao dịch theo note, amount range, category |
 
 ---
 
-## 8. Ưu Tiên Tiếp Theo (Roadmap)
+## 7. Đánh Giá Kiến Trúc
 
-### Phase 1: 🚨 Hotfix (1-2 ngày)
-- [ ] Fix onTap/onLongPress giao dịch thường → tách tap (edit) vs longpress (options)
-- [ ] Thống nhất hệ màu hardcoded → dùng AppTheme constants
-- [ ] Xóa `uuid` dependency thừa
-- [ ] Thêm Edit Expense UI (tái sử dụng AddExpenseScreen)
+### 🟢 Điểm Mạnh
 
-### Phase 2: 🔧 Refactor (3-5 ngày)
-- [ ] Tách `home_screen.dart` (1159 dòng) → 6-8 files nhỏ
-- [ ] Extract duplicate `_confirmDelete()` → shared dialog utility
-- [ ] Giảm duplicate trong `app_theme.dart` (extract common theme builder)
-- [ ] Thêm `BudgetProgress.props` bao gồm `budgetId`
+| Tiêu chí | Đánh giá |
+|----------|----------|
+| **Separation of Concerns** | Rõ ràng: Model → Repository → Cubit → UI |
+| **Repository Pattern** | Tách biệt DB logic khỏi business logic |
+| **Sealed Class cho State** | Type-safe, compiler bắt buộc xử lý tất cả cases |
+| **Isar Watcher** | Auto-refresh UI khi data thay đổi, không cần manual emit |
+| **Singleton DB** | Đảm bảo 1 kết nối Isar duy nhất |
+| **Comment tiếng Việt** | Giải thích rõ "tại sao", không chỉ "cái gì" |
+| **Error Handling** | Có try-catch ở hầu hết các cubit và service |
+| **Dark Mode** | Dùng `_buildTheme()` chung, giảm duplicate |
+| **Auth Wrapper** | Xử lý tốt lifecycle (pause/resume) + cờ pauseLock |
 
-### Phase 3: ✨ Hoàn thiện MVP (5-7 ngày)
-- [ ] JournalCubit + JournalScreen (CRUD + mood picker)
-- [ ] StatsCubit + StatsScreen (pie + bar chart dùng fl_chart)
-- [ ] Unit tests cho Repositories + Cubits
+### 🟡 Điểm Cần Cải Thiện
 
-### Phase 4: 🚀 Production Ready
-- [ ] Performance profiling (IndexedStack + large lists)
-- [ ] App icon + splash screen
-- [ ] Export/backup data (JSON/CSV)
+| # | Vấn đề | Mức độ | Giải thích |
+|---|--------|--------|------------|
+| 1 | **PIN lưu plaintext** trong SharedPreferences | 🔴 **Critical** | `pinCode` lưu trực tiếp dạng chuỗi, không hash. Nên dùng `flutter_secure_storage` + bcrypt/SHA-256 |
+| 2 | **Câu hỏi bảo mật lưu plaintext** | 🔴 **Critical** | `securityAnswer` cũng lưu SharedPreferences không mã hóa |
+| 3 | **Không có unit test** | 🟡 **Warning** | Chỉ có file `widget_test.dart` mặc định, 0 test thực tế |
+| 4 | **File animation trùng lặp** | 🟡 **Warning** | `splash.json` và `cat paw loading.json` giống nhau (18,790 bytes) — lãng phí ~18KB |
+| 5 | **CloudSyncState không dùng Equatable** | 🟡 **Warning** | Các CloudSync state dùng `abstract class` thay vì `sealed class` + `Equatable`, không nhất quán với các cubit khác |
+| 6 | **HomeScreen quá lớn** | 🟡 **Warning** | 24,491 bytes (~600+ dòng) — nên tách thành nhiều widget con |
+| 7 | **SettingsScreen quá lớn** | 🟡 **Warning** | 23,307 bytes (~600+ dòng) — nên tách section |
+| 8 | **StatsScreen quá lớn** | 🟡 **Warning** | 18,516 bytes — nên tách chart widgets |
+| 9 | **PinScreen quá lớn** | 🟡 **Warning** | 17,370 bytes — nhiều logic trong 1 file |
+| 10 | **SettingsCubit tạo SharedPreferences mỗi lần gọi** | 🟢 **Suggestion** | Mỗi method đều `await SharedPreferences.getInstance()`, nên inject 1 lần trong constructor |
+| 11 | **ThemeCubit không có Equatable** | 🟢 **Suggestion** | State là `ThemeMode` enum — hoạt động tốt nhưng không nhất quán |
+| 12 | **CSV Export thiếu escape** | 🟡 **Warning** | Chỉ replace `,` → space, nhưng không wrap field trong double-quotes theo chuẩn RFC 4180 |
+| 13 | **Import xóa toàn bộ data trước khi import** | 🟡 **Warning** | `_db.clear()` — nếu import fail giữa chừng sẽ mất data. Nên backup trước |
 
 ---
 
-## 9. Lưu Ý Cho AI Tương Lai
+## 8. Assets
 
-1. **`home_screen.dart` = file lớn nhất + nhiều bug nhất** — ưu tiên refactor #1
-2. **2 màu đỏ khác nhau** — `0xFFE17055` (theme) vs `0xFFEF4444` (hardcode) → cần thống nhất
-3. **Journal + Stats: Repo sẵn sàng**, chỉ cần Cubit + Screen
-4. **`updateExpense()` trong cubit sẵn sàng** — chỉ thiếu UI gọi nó
-5. **`fl_chart` sẽ dùng khi làm Stats Screen** — giữ lại
-6. **`uuid` KHÔNG dùng ở đâu** — xóa an toàn
-7. **Isar watcher pattern hoạt động tốt** — không cần emit thủ công sau add/delete
+| File | Kích thước | Mô tả |
+|------|-----------|-------|
+| `assets/animations/splash.json` | 18,790 B | Lottie animation Cat Paw Loading |
+| `assets/animations/cat paw loading.json` | 18,790 B | **Bản trùng** — nên xóa |
+| `assets/images/app_icon.png` | 1,241,322 B (~1.2MB) | App icon |
+
+---
+
+## 9. Platforms Hỗ Trợ
+
+- ✅ **Android** (cấu hình sẵn)
+- ✅ **iOS** (cấu hình sẵn)
+- ⚠️ **Windows** (có thư mục nhưng chưa test kỹ — Isar hỗ trợ)
+
+---
+
+## 10. Lộ Trình Phát Triển Tiếp Theo (Gợi ý)
+
+| Ưu tiên | Task | Lý do |
+|---------|------|-------|
+| 🔴 P0 | Hash PIN + Security Answer | Bảo mật cơ bản cho dữ liệu nhạy cảm |
+| 🔴 P0 | Viết Unit Test cho Repository + Cubit | Đảm bảo regression-free khi thêm tính năng |
+| 🟡 P1 | Tách HomeScreen/SettingsScreen thành widget con | Maintainability |
+| 🟡 P1 | Fix CSV export theo chuẩn RFC 4180 | Tương thích Excel/Google Sheets |
+| 🟡 P1 | Backup data trước khi import | Tránh mất data khi import fail |
+| 🟢 P2 | Custom categories (Phase 2) | Đã có comment trong code |
+| 🟢 P2 | Recurring expenses tự động hàng tháng | Nâng cấp từ Fixed Expense |
+| 🟢 P2 | Widget cho Home Screen (Android) | Quick view số dư |
+| 🟢 P2 | Xóa file animation trùng lặp | Giảm bundle size |

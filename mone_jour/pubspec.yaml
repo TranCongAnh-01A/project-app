@@ -29,6 +29,17 @@ dependencies:
   # ── Utilities ──
   path_provider: ^2.1.5
   shared_preferences: ^2.5.5
+  share_plus: ^10.0.0
+  archive: ^4.0.9
+  file_picker: ^8.1.4
+  local_auth: ^3.0.1
+  google_sign_in: ^6.2.2
+  googleapis: ^16.0.0
+  googleapis_auth: ^2.3.1
+  http: ^1.6.0
+  lottie: ^3.3.3
+  crypto: ^3.0.7
+  csv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +49,11 @@ dev_dependencies:
   # ── Isar Code Generation ──
   isar_generator: ^3.1.0+1
   build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+
+  # ── Assets ──
+  assets:
+    - assets/animations/

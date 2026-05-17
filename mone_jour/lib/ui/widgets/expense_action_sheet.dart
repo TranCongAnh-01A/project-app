@@ -7,6 +7,8 @@ import '../../data/models/expense.dart';
 import '../../logic/expense/expense_cubit.dart';
 import '../screens/expense/add_expense_screen.dart';
 
+import 'package:intl/intl.dart';
+
 /// Hiển thị action sheet khi tap/longpress vào giao dịch.
 ///
 /// Tại sao dùng shared utility thay vì code trong từng screen:
@@ -43,10 +45,11 @@ void showExpenseActionSheet(BuildContext context, Expense expense) {
               ),
             ),
 
-            // Thông tin giao dịch
+            // Thông tin giao dịch + thời gian tạo
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -71,6 +74,15 @@ void showExpenseActionSheet(BuildContext context, Expense expense) {
                       ],
                     ),
                   ),
+                  // Thời gian tạo giao dịch
+                  Text(
+                    DateFormat('dd/MM/yyyy\nHH:mm').format(expense.createdAt),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
                 ],
               ),
             ),
@@ -79,23 +91,44 @@ void showExpenseActionSheet(BuildContext context, Expense expense) {
 
             // Chỉnh sửa
             ListTile(
+              enabled: !expense.isFixed,
               leading: Icon(
                 Icons.edit_outlined,
-                color: theme.colorScheme.primary,
+                color: expense.isFixed
+                    ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                    : theme.colorScheme.primary,
               ),
-              title: const Text('Chỉnh sửa'),
-              subtitle: const Text('Thay đổi số tiền, danh mục, ghi chú'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => BlocProvider.value(
-                      value: context.read<ExpenseCubit>(),
-                      child: AddExpenseScreen(editExpense: expense),
-                    ),
-                  ),
-                );
-              },
+              title: Text(
+                'Chỉnh sửa',
+                style: TextStyle(
+                  color: expense.isFixed
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                      : null,
+                ),
+              ),
+              subtitle: Text(
+                expense.isFixed
+                    ? 'Không thể sửa khoản thu/chi cố định'
+                    : 'Thay đổi số tiền, danh mục, ghi chú',
+                style: TextStyle(
+                  color: expense.isFixed
+                      ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+                      : null,
+                ),
+              ),
+              onTap: expense.isFixed
+                  ? null
+                  : () {
+                      Navigator.pop(sheetContext);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<ExpenseCubit>(),
+                            child: AddExpenseScreen(editExpense: expense),
+                          ),
+                        ),
+                      );
+                    },
             ),
 
             // Xóa

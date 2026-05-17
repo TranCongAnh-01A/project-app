@@ -86,6 +86,8 @@ class FixedExpenseCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

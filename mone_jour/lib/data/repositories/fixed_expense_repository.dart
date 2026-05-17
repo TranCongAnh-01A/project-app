@@ -48,7 +48,8 @@ class FixedExpenseRepository {
       ..date = DateTime.now()
       ..isIncome = false
       ..note = template.note ?? template.title
-      ..createdAt = DateTime.now();
+      ..createdAt = DateTime.now()
+      ..isFixed = true;
 
     await _db.writeTxn(() => _db.expenses.put(expense));
   }

@@ -33,6 +33,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late DateTime _selectedDate;
   bool _isSaving = false;
 
+  /// Viền đỏ khi validation thất bại
+  bool _amountError = false;
+
   bool get _isEditMode => widget.editExpense != null;
 
   @override
@@ -55,6 +58,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     } else {
       _selectedDate = DateTime.now();
     }
+
+    // Xóa viền đỏ khi user bắt đầu nhập
+    _amountController.addListener(() {
+      if (_amountError && _amountController.text.isNotEmpty) {
+        setState(() => _amountError = false);
+      }
+    });
   }
 
   @override
@@ -172,6 +182,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: _amountError
+                        ? AppTheme.dangerRed
+                        : theme.colorScheme.outline,
+                    width: _amountError ? 2.0 : 1.0,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: _amountError
+                        ? AppTheme.dangerRed
+                        : theme.colorScheme.primary,
+                    width: 2.0,
+                  ),
+                ),
                 filled: true,
               ),
               autofocus: true,
@@ -278,16 +306,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   Future<void> _save() async {
     // Validate số tiền
     final amountText = _amountController.text.trim();
-    if (amountText.isEmpty) {
-      _showError('Vui lòng nhập số tiền');
-      return;
-    }
-
-    // Clean text before parsing (remove commas)
     final cleanAmountText = amountText.replaceAll(RegExp(r'[^\d]'), '');
     final amount = double.tryParse(cleanAmountText);
-    if (amount == null || amount <= 0) {
-      _showError('Số tiền phải lớn hơn 0');
+
+    if (amountText.isEmpty || amount == null || amount <= 0) {
+      setState(() => _amountError = true);
       return;
     }
 
@@ -298,15 +321,17 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     try {
       if (_isEditMode) {
-        // Edit mode: cập nhật giao dịch hiện có
-        final updated = widget.editExpense!
+        // Tạo object mới thay vì mutate trực tiếp Isar managed object
+        final updated = Expense()
+          ..id = widget.editExpense!.id
           ..amount = amount
           ..category = _selectedCategory
           ..isIncome = _isIncome
           ..date = _selectedDate
           ..note = _noteController.text.trim().isEmpty
               ? null
-              : _noteController.text.trim();
+              : _noteController.text.trim()
+          ..createdAt = widget.editExpense!.createdAt;
         await expenseCubit.updateExpense(updated);
       } else {
         // Add mode: tạo mới

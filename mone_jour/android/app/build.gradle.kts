@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.monejour.mone_jour"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
